@@ -58,8 +58,9 @@ for dsc in "${DSCS[@]}"; do
     "A3439" \
     >"$b/str_hits.txt" 2>&1
 
-  run_to 600 ipsw dyld symaddr "$dsc" --all '.*(B868|FeatureContent|FeatureProviding).*' >"$b/sym_featurecontent.txt" 2>&1
-  run_to 600 ipsw dyld symaddr "$dsc" --all '.*UARPSupportedAccessoryA3.*' >"$b/sym_uarp_a3.txt" 2>&1
+  # note: `symaddr --all` builds a full a2s symbol cache and takes 30min+ on a
+  # split cache - string search above already surfaces the Swift/ObjC symbol
+  # names we need, so keep this step fast.
 
   # targeted per-image queries only (full-cache dumps are too slow/large)
   IMAGES=(

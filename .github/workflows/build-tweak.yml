@@ -26,9 +26,8 @@ jobs:
         run: |
           THEOS="$RUNNER_TEMP/theos"
           git clone --recursive --depth 1 https://github.com/theos/theos.git "$THEOS"
-          if [ ! -d "$THEOS/sdks" ] || [ -z "$(ls -A "$THEOS/sdks" 2>/dev/null)" ]; then
-            git clone --depth 1 https://github.com/theos/sdks "$THEOS/sdks"
-          fi
+          rm -rf "$THEOS/sdks"
+          git clone --depth 1 https://github.com/theos/sdks "$THEOS/sdks"
           ls "$THEOS/sdks" | head -5
           echo "THEOS=$THEOS" >> "$GITHUB_ENV"
 

@@ -69,13 +69,9 @@ for dsc in "${DSCS[@]}"; do
     "/System/Library/PrivateFrameworks/HeadphoneManager.framework/HeadphoneManager"
     "/System/Library/PrivateFrameworks/HeadphoneSettingsUI.framework/HeadphoneSettingsUI"
   )
-  : >"$b/objc_relevant.txt"
   for img in "${IMAGES[@]}"; do
     name="$(basename "$img")"
-    {
-      echo "### $name"
-      run_to 300 ipsw dyld objc class "$dsc" --image "$img" 2>&1
-    } >>"$b/objc_relevant.txt"
+    run_to 600 ipsw dyld macho "$dsc" "$img" --objc --symbols >>"$b/macho_$name.txt" 2>&1
     run_to 120 ipsw dyld image "$dsc" "$img" >"$b/image_$name.txt" 2>&1
   done
 done

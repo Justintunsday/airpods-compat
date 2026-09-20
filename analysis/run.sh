@@ -1,73 +1,70 @@
 #!/usr/bin/env bash
 # DSC analysis helper - runs on macOS (or any host where `ipsw extract --dyld` works).
-# Usage: bash analysis/run.sh "27.0,26.6.2" [build]
-set -euo pipefail
+# Usage: bash analysis/run.sh "27.0" [build]
+set -uo pipefail
 
-VERSIONS="${1:-27.0}"
+VERSION="${1:-27.0}"
 BUILD="${2:-}"
 OUT="${OUT:-out}"
 DEVICE="${DEVICE:-iPhone17,3}"
 
 mkdir -p "$OUT"
 
-IFS=',' read -ra VERS <<<"$VERSIONS"
-for v in "${VERS[@]}"; do
-  tag="$(echo "$v" | tr '.' '_')"
-  dir="ipsw_$tag"
-  mkdir -p "$dir"
+tag="$(echo "$VERSION" | tr '.' '_')"
+dir="ipsw_$tag"
+mkdir -p "$dir"
 
-  echo "==> downloading DSC for iOS $v (device $DEVICE)"
-  args=(download ipsw --device "$DEVICE" --version "$v" --dyld --dyld-arch arm64e --confirm -o "$dir")
-  if [[ -n "$BUILD" ]]; then
-    args+=(--build "$BUILD")
-  fi
-  ipsw "${args[@]}"
+# Run a command with a wall-clock timeout (macOS has no coreutils `timeout`).
+run_to() {
+  local t="$1"; shift
+  echo "--> [timeout ${t}s] $*"
+  perl -e 'alarm shift; exec @ARGV' "$t" "$@" || echo "!! command failed or timed out: $*"
+}
 
-  DSCS=()
-  while IFS= read -r line; do
-    [[ -n "$line" ]] && DSCS+=("$line")
-  done < <(find "$dir" -type f -name 'dyld_shared_cache_arm64e')
-  if [[ ${#DSCS[@]} -eq 0 ]]; then
-    echo "!! no dyld_shared_cache_arm64e found under $dir" >&2
-    find "$dir" -maxdepth 3 -type f | head -50 >&2
-    continue
-  fi
+echo "==> downloading DSC for iOS $VERSION (device $DEVICE)"
+args=(download ipsw --device "$DEVICE" --version "$VERSION" --dyld --dyld-arch arm64e --confirm -o "$dir")
+if [[ -n "$BUILD" ]]; then
+  args+=(--build "$BUILD")
+fi
+run_to 2400 ipsw "${args[@]}"
 
-  for dsc in "${DSCS[@]}"; do
-    b="$OUT/$tag"
-    mkdir -p "$b"
-    echo "==> analyzing $dsc -> $b"
+DSCS=()
+while IFS= read -r line; do
+  [[ -n "$line" ]] && DSCS+=("$line")
+done < <(find "$dir" -type f -name 'dyld_shared_cache_arm64e')
 
-    ipsw dyld info "$dsc" >"$b/info.txt" 2>&1 || true
-    ipsw dyld image "$dsc" >"$b/images.txt" 2>&1 || true
+if [[ ${#DSCS[@]} -eq 0 ]]; then
+  echo "!! no dyld_shared_cache_arm64e found under $dir"
+  find "$dir" -maxdepth 3 -type f | head -50
+  exit 1
+fi
 
-    ipsw dyld str "$dsc" \
-      "AirPods 5" \
-      "AirPods 5 (Wireless Charging)" \
-      "B868" \
-      "A3531" \
-      "A3532" \
-      "A3439" \
-      >"$b/str_hits.txt" 2>&1 || true
+for dsc in "${DSCS[@]}"; do
+  b="$OUT/$tag"
+  mkdir -p "$b"
+  echo "==> analyzing $dsc -> $b"
+  ls -la "$(dirname "$dsc")" >"$b/dsc_files.txt" 2>&1 || true
 
-    # targeted ObjC dumps per image (avoids the huge full-cache dump)
-    : >"$b/objc_relevant.txt"
-    for img in UARP MobileBluetooth BluetoothServices BluetoothManager CoreBluetooth HeadphoneConfigs HeadphoneSettingsUI; do
-      {
-        echo "### $img"
-        ipsw dyld objc class "$dsc" --image "$img" 2>&1 || true
-      } >>"$b/objc_relevant.txt"
-    done
+  run_to 600 ipsw dyld info "$dsc" >"$b/info.txt" 2>&1
+  run_to 600 ipsw dyld image "$dsc" >"$b/images.txt" 2>&1
+  run_to 900 ipsw dyld str "$dsc" \
+    "AirPods 5" \
+    "AirPods 5 (Wireless Charging)" \
+    "B868" \
+    "A3531" \
+    "A3532" \
+    "A3439" \
+    >"$b/str_hits.txt" 2>&1
 
-    ipsw dyld symaddr "$dsc" --all 'UARPSupportedAccessoryA3.*' >"$b/sym_uarp_a3.txt" 2>&1 || true
-    ipsw dyld symaddr "$dsc" --all '.*868.*' >"$b/sym_868.txt" 2>&1 || true
-    ipsw dyld symaddr "$dsc" --all '.*FeatureProviding.*' >"$b/sym_featureproviding.txt" 2>&1 || true
-    ipsw dyld symaddr "$dsc" --all '.*AirPods.*' >"$b/sym_airpods.txt" 2>&1 || true
-
-
-    ls -la "$(dirname "$dsc")" >"$b/dsc_files.txt" 2>&1 || true
+  # targeted ObjC dumps per image (avoids the huge full-cache dump)
+  : >"$b/objc_relevant.txt"
+  for img in UARP MobileBluetooth BluetoothServices HeadphoneConfigs HeadphoneSettingsUI; do
+    {
+      echo "### $img"
+      run_to 900 ipsw dyld objc class "$dsc" --image "$img" 2>&1
+    } >>"$b/objc_relevant.txt"
   done
 done
 
-echo "==> done; artifacts in $OUT"
+echo "==> done"
 find "$OUT" -type f | sort

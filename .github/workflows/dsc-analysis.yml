@@ -4,9 +4,9 @@ on:
   workflow_dispatch:
     inputs:
       versions:
-        description: "Comma separated iOS versions (e.g. 27.0,26.6.2)"
+        description: 'JSON array of iOS versions to analyze'
         required: true
-        default: "27.0,26.6.2"
+        default: '["27.0","26.6.2"]'
       build:
         description: "Optional build override (e.g. 24A437) - only when a single version is passed"
         required: false
@@ -20,17 +20,16 @@ on:
 jobs:
   dsc:
     runs-on: macos-15
-    timeout-minutes: 350
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        version: ${{ fromJSON(inputs.versions || '["27.0","26.6.2"]') }}
     permissions:
       contents: read
 
     steps:
       - uses: actions/checkout@v4
-
-      - name: Show runner info
-        run: |
-          sw_vers
-          df -h /
 
       - name: Install ipsw
         run: |
@@ -38,42 +37,34 @@ jobs:
           brew install blacktop/tap/ipsw || brew install --cask blacktop/tap/ipsw
           ipsw version
 
-      - name: Run DSC analysis
+      - name: Run DSC analysis (iOS ${{ matrix.version }})
         env:
           OUT: out
           DEVICE: iPhone17,3
         run: |
-          set -euo pipefail
-          bash analysis/run.sh "${{ inputs.versions || '27.0,26.6.2' }}" "${{ inputs.build }}"
+          bash analysis/run.sh "${{ matrix.version }}" "${{ inputs.build }}"
 
-      - name: Summarize
+      - name: Summarize (iOS ${{ matrix.version }})
         if: always()
         run: |
+          b="out/$(echo '${{ matrix.version }}' | tr '.' '_')"
           {
-            echo "## DSC analysis summary"
+            echo "## iOS ${{ matrix.version }}"
             echo ""
-            for f in out/*/str_hits.txt; do
+            for f in "$b"/str_hits.txt "$b"/dsc_files.txt; do
               [[ -f "$f" ]] || continue
-              echo "### $f"
+              echo "### $(basename "$f")"
               echo '```'
-              head -40 "$f" || true
-              echo '```'
-            done
-            echo "### UARP A3 symbols"
-            echo '```'
-            for f in out/*/sym_uarp_a3.txt; do
-              [[ -f "$f" ]] || continue
-              echo "# $f"
               head -60 "$f" || true
+              echo '```'
             done
-            echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Upload analysis artifacts
+      - name: Upload analysis artifacts (iOS ${{ matrix.version }})
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: dsc-analysis
+          name: dsc-analysis-${{ matrix.version }}
           path: out/
           if-no-files-found: warn
           retention-days: 30

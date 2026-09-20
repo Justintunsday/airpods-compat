@@ -24,6 +24,8 @@ iOS 26.6.2 相对 iOS 27.0 缺少的 AirPods 5 相关项：
 
 参考：Apple《Identify your AirPods》 <https://support.apple.com/en-us/109525>
 
+完整分析（型号映射、差异清单、方案与风险）见 **[docs/ANALYSIS.md](docs/ANALYSIS.md)**。
+
 ## 仓库结构
 
 ```

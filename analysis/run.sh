@@ -23,7 +23,10 @@ for v in "${VERS[@]}"; do
   fi
   ipsw "${args[@]}"
 
-  mapfile -t DSCS < <(find "$dir" -type f -name 'dyld_shared_cache_arm64e')
+  DSCS=()
+  while IFS= read -r line; do
+    [[ -n "$line" ]] && DSCS+=("$line")
+  done < <(find "$dir" -type f -name 'dyld_shared_cache_arm64e')
   if [[ ${#DSCS[@]} -eq 0 ]]; then
     echo "!! no dyld_shared_cache_arm64e found under $dir" >&2
     find "$dir" -maxdepth 3 -type f | head -50 >&2

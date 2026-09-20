@@ -34,7 +34,8 @@ jobs:
 
       - name: Install ipsw
         run: |
-          brew install blacktop/tap/ipsw
+          brew trust blacktop/tap || true
+          brew install blacktop/tap/ipsw || brew install --cask blacktop/tap/ipsw
           ipsw version
 
       - name: Run DSC analysis
@@ -43,7 +44,7 @@ jobs:
           DEVICE: iPhone17,3
         run: |
           set -euo pipefail
-          bash analysis/run.sh "${{ inputs.versions }}" "${{ inputs.build }}"
+          bash analysis/run.sh "${{ inputs.versions || '27.0,26.6.2' }}" "${{ inputs.build }}"
 
       - name: Summarize
         if: always()

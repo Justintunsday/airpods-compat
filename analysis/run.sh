@@ -49,7 +49,7 @@ for dsc in "${DSCS[@]}"; do
   echo "==> analyzing $dsc -> $b"
   ls -la "$(dirname "$dsc")" >"$b/dsc_files.txt" 2>&1 || true
 
-  run_to 120 ipsw dyld str "$dsc" \
+  run_to 300 ipsw dyld str "$dsc" \
     "AirPods 5" \
     "AirPods 5 (Wireless Charging)" \
     "B868" \
@@ -58,12 +58,24 @@ for dsc in "${DSCS[@]}"; do
     "A3439" \
     >"$b/str_hits.txt" 2>&1
 
+  run_to 600 ipsw dyld symaddr "$dsc" --all '.*(B868|FeatureContent|FeatureProviding).*' >"$b/sym_featurecontent.txt" 2>&1
+  run_to 600 ipsw dyld symaddr "$dsc" --all '.*UARPSupportedAccessoryA3.*' >"$b/sym_uarp_a3.txt" 2>&1
+
   # targeted per-image queries only (full-cache dumps are too slow/large)
+  IMAGES=(
+    "/System/Library/PrivateFrameworks/CoreUARP.framework/CoreUARP"
+    "/System/Library/Frameworks/CoreBluetooth.framework/CoreBluetooth"
+    "/System/Library/PrivateFrameworks/HeadphoneManager.framework/HeadphoneManager"
+    "/System/Library/PrivateFrameworks/HeadphoneSettingsUI.framework/HeadphoneSettingsUI"
+  )
   : >"$b/objc_relevant.txt"
-  for img in UARP MobileBluetooth HeadphoneConfigs; do
-    echo "### $img" >>"$b/objc_relevant.txt"
-    run_to 300 ipsw dyld objc class "$dsc" --image "$img" >>"$b/objc_relevant.txt" 2>&1
-    run_to 120 ipsw dyld image "$dsc" "$img" >"$b/image_$img.txt" 2>&1
+  for img in "${IMAGES[@]}"; do
+    name="$(basename "$img")"
+    {
+      echo "### $name"
+      run_to 300 ipsw dyld objc class "$dsc" --image "$img" 2>&1
+    } >>"$b/objc_relevant.txt"
+    run_to 120 ipsw dyld image "$dsc" "$img" >"$b/image_$name.txt" 2>&1
   done
 done
 

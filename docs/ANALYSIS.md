@@ -54,24 +54,34 @@
 - **显示名**：`AirPods 5`、`AirPods 5 (Wireless Charging)`
 - **型号 ID 表**：`A3439`、`A3440`、`A3441`、`A3529`、`A3530`、`A3531`、`A3532`、`A3533`
 
-## 6. 影响面（待 hook 定位后确认）
+## 6. Hook 目标（已定位，iOS 27.0 DSC）
+
+`ipsw dyld str` 命中（26.6.2 均无）：
+
+| 组件 | 镜像 | 证据（地址/符号） | 用途 |
+|---|---|---|---|
+| 显示名 | **CoreBluetooth** | `"AirPods 5"` @0x2071740f3；`"AirPods 5 (Wireless Charging)"` @0x2071740fd | 设备名称映射 |
+| 型号 ID | **CoreUARP** | `"A3531"` @0x25e9dd0df、`"A3532"`、`"A3439"` | 配件身份表 |
+| 配件类 | **CoreUARP** | `UARPSupportedAccessoryA3532`（`_OBJC_CLASS_$_…`、`-[… init]`、ivar `hwID`） | 配件定义 / 固件 |
+| 功能能力 | **HeadphoneManager**（Swift） | `B868FeatureContent` @0x202731ee0；`B868FeatureContent.productIDs: UInt32`；`init(id:headphoneDevice:)`；协议 `B868FeatureContentType` | 型号→特性映射 |
+
+对照：AirPods 4 的同位实现为 `B768FeatureContent`/`B768FeatureProviding`（两版本都有）。
+
+## 7. 移植方案（基于以上定位）
+
+1. **CoreUARP**：新增/注册 `UARPSupportedAccessoryA3439/A3440/A3441/A3529/A3530USB/A3532/A3533`
+   （hook `UARPSupportedAccessoryManager` 的注册/查询；以现有 `A3063`～`A3065` 为模板）
+2. **CoreBluetooth**：补 `productID → 名称` 映射（"AirPods 5" / "AirPods 5 (Wireless Charging)"）
+3. **HeadphoneManager**：`B868FeatureContent` 的 `productIDs` 与特性集（Swift，需 hook 调用点或桥接层）
+4. 数据表外置（plist/JSON），新增型号无需改代码
+
+## 8. 影响面（待 hook 定位后确认）
 
 - 设备识别与命名（配对弹窗、设置页名称/图标/分类）
 - UARP 固件更新/个性化（配件定义类缺失时通常直接不提供更新）
 - 电量显示、ANC/自适应音频、手势等是否受型号表驱动（待验证）
 
-## 7. 方案设计
-
-```
-tweak/   rootless Theos 包（ElleKit；/var/jb，兼容 roothide jbroot 探测）
-         - 数据驱动型号表（JSON/plist，新增型号无需改代码）
-         - 候选 hook：UARPSupportedAccessoryManager（注册/查询）、
-           HeadphoneConfigs / MobileBluetooth 型号查找、显示名查询
-app/     SwiftUI 控制 App：开关、型号列表、日志导出、重启 bluetoothd
-CI       dsc-analysis.yml（分析数据）· build-tweak.yml（出 .deb）· build-app.yml（出 .ipa）
-```
-
-## 8. 风险与限制
+## 9. 风险与限制
 
 - **SSV**：iOS 15+ 系统卷签名保护 → 不能替换 DSC/系统二进制，必须运行时注入
 - **Swift 类**（`B868FeatureProviding`）不能直接 `%hook`，需 hook 其调用点或桥接层
@@ -79,12 +89,13 @@ CI       dsc-analysis.yml（分析数据）· build-tweak.yml（出 .deb）· bu
 - **固件更新链路**（UARP 配件定义）需真机回归验证
 - 越狱工具与 iOS 版本匹配性（Dopamine/roothide 的可用范围）
 
-## 9. 进度与下一步
+## 10. 进度与下一步
 
 - [x] IPSW 解包、AEA 解密、DSC 定位
 - [x] 型号映射 + 缺失清单（字节级 diff）
-- [ ] CI 分析管线修复（bash 3.2 `mapfile` → 已替换为兼容写法）
-- [ ] 获取 `objc_classes.txt` / `swift.txt` / 符号表 → 确定 hook 点
+- [x] GitHub Actions DSC 分析管线（远程抽 DSC + `ipsw dyld` 查询）
+- [x] hook 目标定位：CoreUARP / CoreBluetooth / HeadphoneManager
+- [ ] 提取 UARP 类方法表与 CoreBluetooth 名称映射实现
 - [ ] tweak v0.1：注册型号 ID + 显示名（最小可见效果）
 - [ ] 控制 App + Actions 编译
 - [ ] 真机回归：配对、设置页、固件更新、电量

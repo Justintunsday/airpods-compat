@@ -1,0 +1,14 @@
+{
+    Filter = {
+        Bundles = (
+            "com.apple.springboard",
+            "com.apple.Preferences"
+        );
+        Executables = (
+            "bluetoothd",
+            "bluetoothuserd",
+            "bluetoothaudiod",
+            "uarpd"
+        );
+    };
+}

@@ -40,23 +40,32 @@ for v in "${VERS[@]}"; do
 
     ipsw dyld info "$dsc" >"$b/info.txt" 2>&1 || true
     ipsw dyld image "$dsc" >"$b/images.txt" 2>&1 || true
-    ipsw dyld objc class "$dsc" >"$b/objc_classes.txt" 2>&1 || true
-    ipsw dyld objc sel "$dsc" >"$b/objc_selectors.txt" 2>&1 || true
-    ipsw dyld swift "$dsc" >"$b/swift.txt" 2>&1 || true
 
     ipsw dyld str "$dsc" \
       "AirPods 5" \
       "AirPods 5 (Wireless Charging)" \
       "B868" \
-      "AirPods 4" \
+      "A3531" \
+      "A3532" \
+      "A3439" \
       >"$b/str_hits.txt" 2>&1 || true
 
-    ipsw dyld symaddr "$dsc" --all 'UARPSupportedAccessoryA3.*' >"$b/sym_uarp_a3.txt" 2>&1 || true
-    ipsw dyld symaddr "$dsc" --all 'B868.*' >"$b/sym_b868.txt" 2>&1 || true
-    ipsw dyld symaddr "$dsc" --all '.*FeatureProviding.*' >"$b/sym_featureproviding.txt" 2>&1 || true
+    # targeted ObjC dumps per image (avoids the huge full-cache dump)
+    : >"$b/objc_relevant.txt"
+    for img in UARP MobileBluetooth BluetoothServices BluetoothManager CoreBluetooth HeadphoneConfigs HeadphoneSettingsUI; do
+      {
+        echo "### $img"
+        ipsw dyld objc class "$dsc" --image "$img" 2>&1 || true
+      } >>"$b/objc_relevant.txt"
+    done
 
-    grep -i -E 'UARP|AirPods|B868|Headphone|MobileBluetooth' "$b/objc_classes.txt" >"$b/objc_filtered.txt" 2>/dev/null || true
-    grep -i -E 'B868|AirPods|UARP|Headphone' "$b/swift.txt" >"$b/swift_filtered.txt" 2>/dev/null || true
+    ipsw dyld symaddr "$dsc" --all 'UARPSupportedAccessoryA3.*' >"$b/sym_uarp_a3.txt" 2>&1 || true
+    ipsw dyld symaddr "$dsc" --all '.*868.*' >"$b/sym_868.txt" 2>&1 || true
+    ipsw dyld symaddr "$dsc" --all '.*FeatureProviding.*' >"$b/sym_featureproviding.txt" 2>&1 || true
+    ipsw dyld symaddr "$dsc" --all '.*AirPods.*' >"$b/sym_airpods.txt" 2>&1 || true
+
+
+    ls -la "$(dirname "$dsc")" >"$b/dsc_files.txt" 2>&1 || true
   done
 done
 

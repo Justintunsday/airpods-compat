@@ -1,0 +1,10 @@
+Package: com.justintunsday.airpodscompat
+Name: AirPods Compat
+Version: 0.0.1
+Architecture: iphoneos-arm64
+Description: Backports AirPods 5 (A3531/A3532/A3533, plus cases A3529/A3530) support to older iOS versions.
+Maintainer: Justintunsday
+Author: Justintunsday
+Section: Tweaks
+Depends: mobilesubstrate
+Depiction: https://github.com/Justintunsday/airpods-compat

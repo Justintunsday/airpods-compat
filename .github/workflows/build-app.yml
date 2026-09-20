@@ -1,0 +1,57 @@
+name: Build App
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "app/**"
+      - ".github/workflows/build-app.yml"
+
+jobs:
+  ipa:
+    runs-on: macos-15
+    timeout-minutes: 30
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate Xcode project
+        run: |
+          cd app
+          xcodegen generate
+          ls -la
+
+      - name: Build unsigned app
+        run: |
+          cd app
+          xcodebuild \
+            -project AirPodsCompat.xcodeproj \
+            -scheme AirPodsCompat \
+            -configuration Release \
+            -sdk iphoneos \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
+            build
+
+      - name: Package unsigned ipa
+        run: |
+          cd app
+          rm -rf Payload
+          mkdir -p Payload
+          cp -R "build/Build/Products/Release-iphoneos/AirPodsCompat.app" Payload/
+          zip -qry AirPodsCompat-unsigned.ipa Payload
+          ls -la AirPodsCompat-unsigned.ipa
+
+      - name: Upload ipa
+        uses: actions/upload-artifact@v4
+        with:
+          name: airpodscompat-app
+          path: app/AirPodsCompat-unsigned.ipa
+          if-no-files-found: error
+          retention-days: 30

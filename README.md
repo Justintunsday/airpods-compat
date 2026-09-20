@@ -30,12 +30,25 @@ iOS 26.6.2 相对 iOS 27.0 缺少的 AirPods 5 相关项：
 
 ```
 .github/workflows/
-  dsc-analysis.yml   # 在 macOS runner 上远程抽 DSC 并跑 ipsw dyld 查询，结果作为 artifact
+  dsc-analysis.yml   # macOS runner 远程抽 DSC + ipsw dyld 查询（artifact）
+  build-tweak.yml    # Theos 编译 rootless .deb（artifact）
+  build-app.yml      # XcodeGen + xcodebuild 出未签名 .ipa（artifact）
 analysis/
-  run.sh             # 分析脚本（CI 与本地 macOS 通用）
-tweak/               # rootless Theos 包（开发中）
-app/                 # SwiftUI 控制 App（XcodeGen，CI 出 ipa，开发中）
+  run.sh             # DSC 分析脚本（CI 与本地 macOS 通用）
+tweak/               # rootless Theos 包（AirPodsCompat）
+  Tweak.xm           # 数据驱动；已定位 CoreUARP / CoreBluetooth / HeadphoneManager
+  layout/…           # 型号表 AirPodsCompatModels.plist
+app/                 # SwiftUI 控制 App（XcodeGen 工程）
+docs/ANALYSIS.md     # 分析报告（型号映射、差异清单、hook 目标、风险）
 ```
+
+## 构建
+
+Actions 里手动触发 **Build Tweak** / **Build App**，或 push 到 `tweak/**`、`app/**` 自动构建，
+产物在对应 run 的 Artifacts：`airpodscompat-deb`、`airpodscompat-app`。
+
+- 安装 deb：`dpkg -i` 到 rootless 越狱环境（Dopamine / roothide）
+- 安装 ipa：TrollStore / AltStore 重签后安装
 
 ## 分析流程
 

@@ -1,0 +1,43 @@
+name: Build Tweak
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "tweak/**"
+      - ".github/workflows/build-tweak.yml"
+
+jobs:
+  deb:
+    runs-on: macos-15
+    timeout-minutes: 30
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install toolchain
+        run: |
+          brew install ldid xz || true
+
+      - name: Install Theos
+        run: |
+          THEOS="$RUNNER_TEMP/theos"
+          git clone --recursive --depth 1 https://github.com/theos/theos.git "$THEOS"
+          git clone --depth 1 https://github.com/theos/sdks "$THEOS/sdks"
+          echo "THEOS=$THEOS" >> "$GITHUB_ENV"
+
+      - name: Build rootless package
+        run: |
+          make -C tweak package FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=rootless
+          find tweak/packages -name '*.deb' -exec ls -la {} \;
+
+      - name: Upload deb
+        uses: actions/upload-artifact@v4
+        with:
+          name: airpodscompat-deb
+          path: tweak/packages/*.deb
+          if-no-files-found: error
+          retention-days: 30

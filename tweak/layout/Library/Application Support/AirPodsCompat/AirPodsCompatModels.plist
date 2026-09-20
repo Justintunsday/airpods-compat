@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>Version</key>
+	<integer>1</integer>
+	<key>GeneratedFrom</key>
+	<string>iOS 27.0 (24A437) DSC + Apple KB109525</string>
+	<key>Models</key>
+	<dict>
+		<key>AirPods5</key>
+		<dict>
+			<key>DisplayName</key>
+			<string>AirPods 5</string>
+			<key>ModelNumbers</key>
+			<array>
+				<string>A3531</string>
+				<string>A3532</string>
+				<string>A3533</string>
+			</array>
+			<key>Cases</key>
+			<array>
+				<string>A3529</string>
+			</array>
+		</dict>
+		<key>AirPods5WirelessCharging</key>
+		<dict>
+			<key>DisplayName</key>
+			<string>AirPods 5 (Wireless Charging)</string>
+			<key>ModelNumbers</key>
+			<array>
+				<string>A3439</string>
+				<string>A3440</string>
+				<string>A3441</string>
+			</array>
+			<key>Cases</key>
+			<array>
+				<string>A3530</string>
+			</array>
+		</dict>
+	</dict>
+</dict>
+</plist>

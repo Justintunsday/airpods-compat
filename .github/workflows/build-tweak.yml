@@ -42,7 +42,9 @@ jobs:
         run: |
           rm -rf tweak/packages
           make -C tweak clean >/dev/null 2>&1 || true
-          make -C tweak package FINALPACKAGE=1
+          make -C tweak package FINALPACKAGE=1 \
+            THEOS_PACKAGE_ARCH=iphoneos-arm \
+            THEOS_PACKAGE_INSTALL_PREFIX=
           cp tweak/packages/*.deb dist/
           ls -la dist/
 

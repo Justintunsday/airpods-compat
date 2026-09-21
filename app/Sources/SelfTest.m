@@ -112,7 +112,23 @@ static id ACDryAlternativeModelNumbers(Class self, SEL _cmd) {
 static Class ACFirstAvailableClass(NSArray<NSString *> *names) {
     for (NSString *name in names) {
         Class cls = NSClassFromString(name);
-        if (cls) return cls;
+        if (!cls) continue;
+        if ([name containsString:@"AirPods"]) {
+            // abstract base: inherit from a concrete sibling so -init works
+            unsigned int count = 0;
+            Class *classes = objc_copyClassList(&count);
+            Class concrete = Nil;
+            for (unsigned int i = 0; i < count; i++) {
+                Class candidate = classes[i];
+                if (class_getSuperclass(candidate) != cls) continue;
+                if (![NSStringFromClass(candidate) hasPrefix:@"UARPSupportedAccessoryA"]) continue;
+                concrete = candidate;
+                break;
+            }
+            free(classes);
+            if (concrete) return concrete;
+        }
+        return cls;
     }
     return Nil;
 }

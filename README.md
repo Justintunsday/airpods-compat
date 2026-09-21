@@ -15,15 +15,19 @@
 
 ## 兼容性
 
-| iOS | 状态 | 说明 |
-|---|---|---|
-| 18.0 – 18.6.2 | 构建支持 | iPhone 16 出厂最低 18.0；UARP/CoreBluetooth hook 走老类回退（CI 分析 18.6.2 校验） |
-| 26.x | 已验证目标 | 26.6.2 为当前主目标 |
-| 27.x | 源版本 | 原生已支持，tweak 自动跳过注册 |
-| jailbreak | rootless + rootful | CI 同时产出 `iphoneos-arm64`(rootless) 与 `iphoneos-arm`(rootful) 两个 deb |
+| iOS | 代表性设备 | 状态 | 说明 |
+|---|---|---|---|
+| 15.6.x | iPhone 13 (iPhone14,5) | 构建支持 | 老系统无 AirPods 5 类；tweak 运行时自动挑选同族具体类做基类 |
+| 16.6.x | iPhone 13 | 构建支持 | 同上 |
+| 17.7 | iPhone 14 Pro (iPhone15,2) | 构建支持 | 同上 |
+| 18.6.2 | iPhone 16 (iPhone17,3) | 构建支持 | iPhone 16 出厂最低 18.0 |
+| 26.6.2 | iPhone 16 | 主目标 | 已完成的验证目标 |
+| 27.0 | iPhone 16 | 源版本 | 原生支持，tweak 自动跳过 |
+| jailbreak | — | rootless + rootful | CI 同时产出 `iphoneos-arm64`(rootless) 与 `iphoneos-arm`(rootful) |
 
-> 同一台 iPhone 16 无法低于 iOS 18.0；更旧机型（iOS 15/16）+ rootful 理论上可用，
-> 但 `HeadphoneManager` 特性集需要按版本另适配。
+> 跨版本可移植性由「运行时能力探测」保证：tweak 不硬编码类名，优先使用现有具体类；
+> 找不到时自动从 `UARPSupportedAccessoryAirPodsBud/Case/CaseUSB` 的具体子类里挑一个。
+> `HeadphoneManager` 仅新系统有，老系统走 UARP + CoreBluetooth 名称链路。
 
 ## 已知差异（来自 DSC 字符串/类名 diff）
 

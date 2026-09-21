@@ -75,10 +75,32 @@ static NSArray *AC_alternativeAppleModelNumbers(Class self, SEL _cmd) {
     return ACModelForClass(self)[@"alternativeAppleModelNumbers"];
 }
 
+static Class ACFindConcreteSiblingOf(Class abstractBase) {
+    unsigned int count = 0;
+    Class *classes = objc_copyClassList(&count);
+    Class found = Nil;
+    for (unsigned int i = 0; i < count; i++) {
+        Class candidate = classes[i];
+        if (class_getSuperclass(candidate) != abstractBase) continue;
+        if (![NSStringFromClass(candidate) hasPrefix:@"UARPSupportedAccessoryA"]) continue;
+        found = candidate;
+        break;
+    }
+    free(classes);
+    return found;
+}
+
 static Class ACResolveBaseClass(NSArray<NSString *> *names) {
     for (NSString *name in names) {
         Class cls = NSClassFromString(name);
-        if (cls) return cls;
+        if (!cls) continue;
+        // abstract bases are placeholders: inherit from a concrete sibling
+        // instead so we get its full -init behaviour.
+        if ([name containsString:@"AirPods"]) {
+            Class concrete = ACFindConcreteSiblingOf(cls);
+            if (concrete) return concrete;
+        }
+        return cls;
     }
     return Nil;
 }

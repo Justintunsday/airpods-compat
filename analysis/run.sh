@@ -5,8 +5,8 @@ set -uo pipefail
 
 VERSION="${1:-27.0}"
 BUILD="${2:-}"
+DEVICE="${3:-${DEVICE:-iPhone17,3}}"
 OUT="${OUT:-out}"
-DEVICE="${DEVICE:-iPhone17,3}"
 
 mkdir -p "$OUT"
 

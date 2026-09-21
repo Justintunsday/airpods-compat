@@ -93,6 +93,24 @@ for dsc in "${DSCS[@]}"; do
     run_to 600 ipsw dyld macho "$dsc" "$img" --objc --symbols --strings --extract --output "$b/dylibs" >>"$b/macho_$name.txt" 2>&1
     run_to 120 ipsw dyld image "$dsc" "$img" >"$b/image_$name.txt" 2>&1
   done
+
+  # --- Swift dispatch tracing ---
+  # positive control: xref on allFeatureContents() must show the call inside
+  # HeadphoneDevice.featureContent; then xref the getter itself.
+  case "$VERSION" in
+    27.0)   XREF_ADDRS="0x2027139b0 0x2027144c0" ;;
+    26.6.2) XREF_ADDRS="0x1dcbbfdcc 0x1dcbc0744" ;;
+    *)      XREF_ADDRS="" ;;
+  esac
+  if [[ -n "$XREF_ADDRS" ]]; then
+    : >"$b/xref.txt"
+    for addr in $XREF_ADDRS; do
+      {
+        echo "### xref $addr"
+      } >>"$b/xref.txt"
+      run_to 1800 ipsw dyld xref "$dsc" "$addr" --all >>"$b/xref.txt" 2>&1
+    done
+  fi
 done
 
 echo "==> done"

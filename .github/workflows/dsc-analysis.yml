@@ -52,7 +52,7 @@ jobs:
           {
             echo "## iOS ${{ matrix.version }}"
             echo ""
-            for f in "$b"/str_hits.txt "$b"/dsc_files.txt; do
+            for f in "$b"/str_hits.txt "$b"/dsc_files.txt "$b"/xref.txt; do
               [[ -f "$f" ]] || continue
               echo "### $(basename "$f")"
               echo '```'

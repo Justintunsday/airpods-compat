@@ -1,0 +1,81 @@
+name: Sim Runtime Analysis
+
+# The iOS Simulator runtime ships HeadphoneManager / HeadphoneSettingsUI as real
+# Mach-O files (full symbol tables + chained fixups), unlike the device DSC.
+# Collect them here so the call-site / vtable analysis can run locally.
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/sim-runtime-analysis.yml"
+
+jobs:
+  sim:
+    runs-on: macos-15
+    timeout-minutes: 40
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Locate simulator runtimes
+        run: |
+          set -euo pipefail
+          mkdir -p out
+          {
+            echo "== Profiles/Runtimes =="
+            ls /Library/Developer/CoreSimulator/Profiles/Runtimes/ 2>/dev/null || true
+            echo "== Volumes =="
+            ls /Library/Developer/CoreSimulator/Volumes/ 2>/dev/null || true
+            echo "== simctl =="
+            xcrun simctl runtime list 2>/dev/null || true
+          } | tee out/runtimes.txt
+
+      - name: Copy frameworks from every runtime
+        run: |
+          set -euo pipefail
+          mkdir -p out/sim
+          found=0
+          while IFS= read -r root; do
+            [ -d "$root" ] || continue
+            label="$(echo "$root" | sed 's#/Library/Developer/CoreSimulator/Profiles/Runtimes/##; s#/Contents/Resources/RuntimeRoot##; s#[^A-Za-z0-9._-]#_#g')"
+            for fw in HeadphoneManager HeadphoneSettingsUI HeadphoneConfigs; do
+              src="$root/System/Library/PrivateFrameworks/$fw.framework/$fw"
+              if [ -f "$src" ]; then
+                cp "$src" "out/sim/${fw}__${label}"
+                found=$((found+1))
+              fi
+            done
+            src="$root/System/Library/PreferenceBundles/BluetoothSettings.bundle/BluetoothSettings"
+            if [ -f "$src" ]; then
+              cp "$src" "out/sim/BluetoothSettings__${label}"
+              found=$((found+1))
+            fi
+          done < <(ls -d /Library/Developer/CoreSimulator/Profiles/Runtimes/*.simruntime/Contents/Resources/RuntimeRoot /Library/Developer/CoreSimulator/Volumes/*/Library/Developer/CoreSimulator/Profiles/Runtimes/*.simruntime/Contents/Resources/RuntimeRoot 2>/dev/null || true)
+          echo "copied $found binaries"
+          ls -la out/sim
+
+      - name: Dump symbols / load commands / fixups
+        run: |
+          set -euo pipefail
+          for f in out/sim/*; do
+            [ -f "$f" ] || continue
+            name="$(basename "$f")"
+            nm -n "$f" > "out/${name}__nm.txt" 2>&1 || true
+            otool -l "$f" > "out/${name}__loads.txt" 2>&1 || true
+            xcrun dyld_info -fixups "$f" > "out/${name}__fixups.txt" 2>&1 || true
+            echo "== $name =="
+            grep -E "allFeatureContents|featureContent|UIContentProvider" "out/${name}__nm.txt" | head -15 || true
+          done
+
+      - name: Upload runtime binaries and dumps
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sim-runtime-binaries
+          path: out/
+          if-no-files-found: warn
+          retention-days: 30

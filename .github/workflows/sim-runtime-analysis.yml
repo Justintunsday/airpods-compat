@@ -71,6 +71,53 @@ jobs:
             grep -E "allFeatureContents|featureContent|UIContentProvider" "out/${name}__nm.txt" | head -15 || true
           done
 
+      - name: Locate simulator dyld caches
+        run: |
+          set -euo pipefail
+          for root in /Library/Developer/CoreSimulator/Volumes/*/Library/Developer/CoreSimulator/Profiles/Runtimes/*.simruntime/Contents/Resources/RuntimeRoot ; do
+            [ -d "$root" ] || continue
+            label="$(basename "$(dirname "$(dirname "$root")")")"
+            {
+              echo "== $label =="
+              echo "-- Caches/com.apple.dyld --"
+              ls -la "$root/System/Library/Caches/com.apple.dyld/" 2>/dev/null || true
+              echo "-- System/Library/dyld --"
+              ls -la "$root/System/Library/dyld/" 2>/dev/null || true
+            } | tee -a out/simcaches.txt
+          done
+
+      - name: Analyze simulator cache with ipsw
+        run: |
+          set -euo pipefail
+          brew trust blacktop/tap || true
+          brew install blacktop/tap/ipsw || true
+          ipsw version || true
+          MAIN=""
+          for candidate in /Library/Developer/CoreSimulator/Volumes/*/Library/Developer/CoreSimulator/Profiles/Runtimes/*.simruntime/Contents/Resources/RuntimeRoot/System/Library/Caches/com.apple.dyld/dyld_sim_shared_cache_arm64 ; do
+            [ -f "$candidate" ] && MAIN="$candidate"
+          done
+          if [ -z "$MAIN" ]; then
+            echo "no sim DSC main file found (see simcaches.txt)" | tee out/simdsc.txt
+            exit 0
+          fi
+          echo "$MAIN" | tee out/simdsc.txt
+          DEST="out/simdsc"
+          mkdir -p "$DEST"
+          {
+            echo "== dylib list =="
+            timeout 600 ipsw dyld info --dylibs "$MAIN" 2>&1 | head -20
+          } | tee -a out/simdsc.txt
+          for fw in \
+            /System/Library/PrivateFrameworks/HeadphoneManager.framework/HeadphoneManager \
+            /System/Library/PrivateFrameworks/HeadphoneSettingsUI.framework/HeadphoneSettingsUI ; do
+            name="$(basename "$fw")"
+            {
+              echo "== extract $name =="
+              time timeout 900 ipsw dyld macho "$MAIN" "$fw" --symbols --objc --extract --output "$DEST" 2>&1 | tail -5
+            } | tee -a "out/simdsc_${name}.txt"
+          done
+          ls -la "$DEST" || true
+
       - name: Upload runtime binaries and dumps
         if: always()
         uses: actions/upload-artifact@v4

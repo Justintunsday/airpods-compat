@@ -27,3 +27,28 @@ targets:
         SWIFT_OBJC_BRIDGING_HEADER: Sources/AirPodsCompat-Bridging-Header.h
         CODE_SIGNING_ALLOWED: NO
         CODE_SIGNING_REQUIRED: NO
+
+  AirPodsCompatTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - Tests
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        SWIFT_VERSION: "5.9"
+        SWIFT_OBJC_BRIDGING_HEADER: Sources/AirPodsCompat-Bridging-Header.h
+        CODE_SIGNING_ALLOWED: NO
+        CODE_SIGNING_REQUIRED: NO
+    dependencies:
+      - target: AirPodsCompat
+
+schemes:
+  AirPodsCompat:
+    build:
+      targets:
+        AirPodsCompat: all
+    test:
+      config: Debug
+      targets:
+        - AirPodsCompatTests

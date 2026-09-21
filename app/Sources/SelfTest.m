@@ -148,7 +148,11 @@ static Class ACFirstAvailableClass(NSArray<NSString *> *names) {
     return Nil;
 }
 
+static NSMutableDictionary *gDryRunSummary;
+
 static void ACRunRegistrationDryRun(NSMutableString *out) {
+    gDryRunSummary = [NSMutableDictionary dictionary];
+    NSMutableArray<NSString *> *actualIdentifiers = [NSMutableArray array];
     Class managerClass = NSClassFromString(@"UARPSupportedAccessoryManager");
     if (!managerClass) {
         [out appendString:@"  [skip] UARPSupportedAccessoryManager 不可用（CoreUARP 未加载）\n"];
@@ -229,6 +233,7 @@ static void ACRunRegistrationDryRun(NSMutableString *out) {
             [out appendFormat:@"       props: identifier=%@ hwID=%@ appleModelNumber=%@\n",
                  ACKVC(accessory, @"identifier"), ACKVC(accessory, @"hwID"),
                  ACKVC(accessory, @"appleModelNumber")];
+            [actualIdentifiers addObject:ACKVC(accessory, @"identifier")];
             NSString *found = nil;
             @try {
                 id result = ((id (*)(id, SEL, id))objc_msgSend)(manager,
@@ -251,6 +256,35 @@ static void ACRunRegistrationDryRun(NSMutableString *out) {
     [out appendFormat:@"  干跑结果: %@ (expected=%lu registered=%lu created=%lu already=%lu grew=%d)\n",
         pass ? @"PASS ✅" : @"FAIL ❌", (unsigned long)expected, (unsigned long)registered,
         (unsigned long)createdNow, (unsigned long)alreadyRegistered, grew];
+
+    gDryRunSummary[@"expected"] = @(expected);
+    gDryRunSummary[@"registered"] = @(registered);
+    gDryRunSummary[@"created"] = @(createdNow);
+    gDryRunSummary[@"already"] = @(alreadyRegistered);
+    gDryRunSummary[@"grew"] = @(grew);
+    gDryRunSummary[@"pass"] = @(pass);
+    gDryRunSummary[@"actualIdentifiers"] = [actualIdentifiers copy];
+}
+
+NSDictionary *ACRunSelfTestSummary(void) {
+    @autoreleasepool {
+        NSMutableString *sink = [NSMutableString string];
+        @try {
+            ACRunRegistrationDryRun(sink);
+        } @catch (__unused NSException *e) {
+        }
+
+        NSMutableDictionary *summary = gDryRunSummary ? [gDryRunSummary mutableCopy]
+                                                      : [NSMutableDictionary dictionary];
+        NSArray<NSDictionary *> *models = ACTestModels();
+        NSMutableSet *pids = [NSMutableSet set];
+        for (NSDictionary *model in models) {
+            [pids addObject:model[@"productID"] ?: @0];
+        }
+        summary[@"modelCount"] = @(models.count);
+        summary[@"uniqueProductIDs"] = @(pids.count);
+        return summary;
+    }
 }
 
 #pragma mark - entry point

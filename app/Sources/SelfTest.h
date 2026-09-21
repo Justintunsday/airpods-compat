@@ -10,4 +10,9 @@ NS_ASSUME_NONNULL_BEGIN
 ///   3. a dry-run of the tweak's dynamic class registration in this process
 FOUNDATION_EXPORT NSString *ACRunSelfTest(void);
 
+/// Same dry-run as above but returns structured values for automated tests:
+/// modelCount, uniqueProductIDs, expected, registered, created, already,
+/// grew, actualIdentifiers.
+FOUNDATION_EXPORT NSDictionary *ACRunSelfTestSummary(void);
+
 NS_ASSUME_NONNULL_END

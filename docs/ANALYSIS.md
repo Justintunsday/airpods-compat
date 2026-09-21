@@ -67,13 +67,30 @@
 
 对照：AirPods 4 的同位实现为 `B768FeatureContent`/`B768FeatureProviding`（两版本都有）。
 
+### 6.1 数值产品 ID（CoreUARP 反汇编提取）
+
+| 类 | productID | 备选型号 | 继承自 |
+|---|---|---|---|
+| `UARPSupportedAccessoryA3532` | 0x2036 | A3531 | `…AirPodsBud` |
+| `UARPSupportedAccessoryA3533` | 0x2037 | — | `…AirPodsBud` |
+| `UARPSupportedAccessoryA3440` | 0x2030 | A3439 | `…AirPodsBud` |
+| `UARPSupportedAccessoryA3441` | 0x2032 | — | `…AirPodsBud` |
+| `UARPSupportedAccessoryA3529` | 0x2035 | — | `…AirPodsCase` |
+| `UARPSupportedAccessoryA3529USB` | 0x13a5 | — | `…AirPodsCaseUSB` |
+| `UARPSupportedAccessoryA3530USB` | 0x13a4 | — | `…AirPodsCaseUSB` |
+
+注册 API：`-[UARPSupportedAccessoryManager addSupportedAccessory:]`（`+defaultManager`）。
+
 ## 7. 移植方案（基于以上定位）
 
-1. **CoreUARP**：新增/注册 `UARPSupportedAccessoryA3439/A3440/A3441/A3529/A3530USB/A3532/A3533`
-   （hook `UARPSupportedAccessoryManager` 的注册/查询；以现有 `A3063`～`A3065` 为模板）
-2. **CoreBluetooth**：补 `productID → 名称` 映射（"AirPods 5" / "AirPods 5 (Wireless Charging)"）
-3. **HeadphoneManager**：`B868FeatureContent` 的 `productIDs` 与特性集（Swift，需 hook 调用点或桥接层）
-4. 数据表外置（plist/JSON），新增型号无需改代码
+1. **CoreUARP**：运行时以现有具体类为模板（26.6.2 已含 `A3064`/`A3122`/`A3122USB`）动态创建
+   `AirPodsCompat_A35xx` 子类，覆盖 `+productID` / `+appleModelNumber` /
+   `+mobileAssetAppleModelNumber` / `+alternativeAppleModelNumbers`，再注册进 manager（已实现于 `tweak/Tweak.xm`）
+2. **CoreBluetooth**：hook `-[CBDevice productName]` 与
+   `+[CBAccessoryLogging getProductNameFromProductID:]`，按 PID 返回 "AirPods 5" 等名称（已实现）
+3. **HeadphoneManager**：`B868FeatureContent.productIDs`（Swift，待 v0.3；需 hook
+   `HeadphoneDevice.allFeatureContents(productID:device:)` 或其调用点）
+4. 型号表外置：`tweak/layout/Library/Application Support/AirPodsCompat/AirPodsCompatModels.plist`
 
 ## 8. 影响面（待 hook 定位后确认）
 

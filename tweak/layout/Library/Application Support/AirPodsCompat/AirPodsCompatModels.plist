@@ -3,41 +3,127 @@
 <plist version="1.0">
 <dict>
 	<key>Version</key>
-	<integer>1</integer>
+	<integer>2</integer>
 	<key>GeneratedFrom</key>
-	<string>iOS 27.0 (24A437) DSC + Apple KB109525</string>
-	<key>Models</key>
-	<dict>
-		<key>AirPods5</key>
+	<string>iOS 27.0 (24A437) CoreUARP disassembly + Apple KB109525</string>
+	<key>UARP</key>
+	<array>
 		<dict>
-			<key>DisplayName</key>
-			<string>AirPods 5</string>
-			<key>ModelNumbers</key>
+			<key>appleModelNumber</key>
+			<string>A3532</string>
+			<key>alternativeAppleModelNumbers</key>
 			<array>
 				<string>A3531</string>
-				<string>A3532</string>
-				<string>A3533</string>
 			</array>
-			<key>Cases</key>
+			<key>productID</key>
+			<integer>8246</integer>
+			<key>displayName</key>
+			<string>AirPods 5</string>
+			<key>baseClasses</key>
 			<array>
-				<string>A3529</string>
+				<string>UARPSupportedAccessoryA3064</string>
+				<string>UARPSupportedAccessoryAirPodsBud</string>
 			</array>
 		</dict>
-		<key>AirPods5WirelessCharging</key>
 		<dict>
-			<key>DisplayName</key>
-			<string>AirPods 5 (Wireless Charging)</string>
-			<key>ModelNumbers</key>
+			<key>appleModelNumber</key>
+			<string>A3533</string>
+			<key>productID</key>
+			<integer>8247</integer>
+			<key>displayName</key>
+			<string>AirPods 5</string>
+			<key>baseClasses</key>
+			<array>
+				<string>UARPSupportedAccessoryA3064</string>
+				<string>UARPSupportedAccessoryAirPodsBud</string>
+			</array>
+		</dict>
+		<dict>
+			<key>appleModelNumber</key>
+			<string>A3440</string>
+			<key>alternativeAppleModelNumbers</key>
 			<array>
 				<string>A3439</string>
-				<string>A3440</string>
-				<string>A3441</string>
 			</array>
-			<key>Cases</key>
+			<key>productID</key>
+			<integer>8240</integer>
+			<key>displayName</key>
+			<string>AirPods 5 (Wireless Charging)</string>
+			<key>baseClasses</key>
 			<array>
-				<string>A3530</string>
+				<string>UARPSupportedAccessoryA3064</string>
+				<string>UARPSupportedAccessoryAirPodsBud</string>
 			</array>
 		</dict>
+		<dict>
+			<key>appleModelNumber</key>
+			<string>A3441</string>
+			<key>productID</key>
+			<integer>8242</integer>
+			<key>displayName</key>
+			<string>AirPods 5 (Wireless Charging)</string>
+			<key>baseClasses</key>
+			<array>
+				<string>UARPSupportedAccessoryA3064</string>
+				<string>UARPSupportedAccessoryAirPodsBud</string>
+			</array>
+		</dict>
+		<dict>
+			<key>appleModelNumber</key>
+			<string>A3529</string>
+			<key>productID</key>
+			<integer>8245</integer>
+			<key>displayName</key>
+			<string>AirPods 5 (Charging Case)</string>
+			<key>baseClasses</key>
+			<array>
+				<string>UARPSupportedAccessoryA3122</string>
+				<string>UARPSupportedAccessoryAirPodsCase</string>
+			</array>
+		</dict>
+		<dict>
+			<key>appleModelNumber</key>
+			<string>A3529USB</string>
+			<key>productID</key>
+			<integer>5029</integer>
+			<key>displayName</key>
+			<string>AirPods 5 (Charging Case)</string>
+			<key>baseClasses</key>
+			<array>
+				<string>UARPSupportedAccessoryA3122USB</string>
+				<string>UARPSupportedAccessoryAirPodsCaseUSB</string>
+			</array>
+		</dict>
+		<dict>
+			<key>appleModelNumber</key>
+			<string>A3530USB</string>
+			<key>productID</key>
+			<integer>5028</integer>
+			<key>displayName</key>
+			<string>AirPods 5 (Wireless Charging Case)</string>
+			<key>baseClasses</key>
+			<array>
+				<string>UARPSupportedAccessoryA3122USB</string>
+				<string>UARPSupportedAccessoryAirPodsCaseUSB</string>
+			</array>
+		</dict>
+	</array>
+	<key>DisplayNames</key>
+	<dict>
+		<key>8240</key>
+		<string>AirPods 5 (Wireless Charging)</string>
+		<key>8242</key>
+		<string>AirPods 5 (Wireless Charging)</string>
+		<key>8245</key>
+		<string>AirPods 5 (Charging Case)</string>
+		<key>8246</key>
+		<string>AirPods 5</string>
+		<key>8247</key>
+		<string>AirPods 5</string>
+		<key>5028</key>
+		<string>AirPods 5 (Wireless Charging Case)</string>
+		<key>5029</key>
+		<string>AirPods 5 (Charging Case)</string>
 	</dict>
 </dict>
 </plist>

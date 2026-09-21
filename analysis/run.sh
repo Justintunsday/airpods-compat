@@ -103,6 +103,11 @@ for dsc in "${DSCS[@]}"; do
         "/System/Library/PrivateFrameworks/HeadphoneConfigs.framework/HeadphoneConfigs"
         "/System/Library/PrivateFrameworks/MobileBluetooth.framework/MobileBluetooth"
         "/System/Library/PreferenceBundles/BluetoothSettings.bundle/BluetoothSettings"
+        "/System/Library/PrivateFrameworks/HeadphoneCommonUIKit.framework/HeadphoneCommonUIKit"
+        "/System/Library/PrivateFrameworks/HeadphoneProxFeatureService.framework/HeadphoneProxFeatureService"
+        "/System/Library/PrivateFrameworks/HeadphoneSettings.framework/HeadphoneSettings"
+        "/System/Library/PrivateFrameworks/HearingModeSettingsUI.framework/HearingModeSettingsUI"
+        "/System/Library/PrivateFrameworks/HearingModeUI.framework/HearingModeUI"
       ) ;;
   esac
   mkdir -p "$b/dylibs"

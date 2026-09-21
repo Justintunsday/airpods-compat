@@ -42,7 +42,7 @@ jobs:
         run: |
           rm -rf tweak/packages
           make -C tweak clean >/dev/null 2>&1 || true
-          make -C tweak package FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=
+          make -C tweak package FINALPACKAGE=1
           cp tweak/packages/*.deb dist/
           ls -la dist/
 

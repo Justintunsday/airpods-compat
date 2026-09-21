@@ -1,6 +1,10 @@
 TARGET := iphone:clang:16.5:15.0
 ARCHS := arm64e arm64
-THEOS_PACKAGE_SCHEME := rootless
+
+# package scheme is chosen by the build command:
+#   rootless: make package THEOS_PACKAGE_SCHEME=rootless   (Dopamine / ElleKit)
+#   rootful:  make package                                 (legacy jailbreaks)
+# no default here so both variants can be produced.
 
 INSTALL_TARGET_PROCESSES := SpringBoard bluetoothd
 

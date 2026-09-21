@@ -80,6 +80,12 @@ for dsc in "${DSCS[@]}"; do
     "/System/Library/PrivateFrameworks/HeadphoneConfigs.framework/HeadphoneConfigs"
     "/System/Library/PrivateFrameworks/MobileBluetooth.framework/MobileBluetooth"
     "/System/Library/PreferenceBundles/BluetoothSettings.bundle/BluetoothSettings"
+    "/Applications/Preferences.app/Preferences"
+    "/System/Library/PrivateFrameworks/BluetoothManager.framework/BluetoothManager"
+    "/System/Library/PrivateFrameworks/HeadphoneProxService.framework/HeadphoneProxService"
+    "/System/Library/PrivateFrameworks/HearingAid.framework/HearingAid"
+    "/usr/libexec/headphonesd"
+    "/usr/libexec/HearingAidUIServer"
   )
   mkdir -p "$b/dylibs"
   for img in "${IMAGES[@]}"; do

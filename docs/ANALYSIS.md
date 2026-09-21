@@ -158,8 +158,8 @@
 ### 11.4 阻塞点与下一步
 
 - 动态 ObjC 类**无法**提供 Swift witness table；伪造见证表或复用 B768 的 WP 都等于「把 AirPods 5 当成 AirPods 4」，特性可能错误 → 不做
-- 消费者（读取 `allFeatureContents` 并按类型分派的一方）**不在** HeadphoneManager / HeadphoneSettingsUI /
-  CoreBluetooth / CoreUARP 这四个已抽取 dylib 中（直接调用扫描为 0）
+- 直接 `bl`/`b` 扫描没有找到工厂调用者；这只能排除目标地址上的直接分支，
+  **不能排除** Swift 协议见证表、dyld stub 或其他间接调用
 - 已将 `HeadphoneConfigs`、`MobileBluetooth`、`BluetoothSettings.bundle` 加入 DSC 抽取列表，
   下一步在它们中定位消费者；确认分派方式后再决定能否用「按 PID 处理」的保守 hook 实现
 
@@ -171,7 +171,9 @@ BluetoothSettings.bundle、CoreBluetooth、CoreUARP）做了两类扫描，**均
 - 直接调用工厂 `allFeatureContents(productID:device:)` 的 `bl`/`b`
 - 类型分派入口：`B768FeatureContentCMa` / `B868FeatureContentCMa`（`as?` 会调用的 metadata accessor）
 
-推论：消费者在尚未抽取的二进制中，或通过类型名/协议见证间接访问。下一步候选：
+更新：§11.6 在 `HeadphoneSettingsUI` 找到了型号特定的协议见证表，
+因此「消费者一定在未抽取二进制中」的推论不成立。仍需定位获取工厂结果并选择 UI provider 的入口。
+可继续检查：
 
 - `HearingAidUIServer` / 听力相关框架
 - `headphonesd` 等用户态守护进程
@@ -179,3 +181,33 @@ BluetoothSettings.bundle、CoreBluetooth、CoreUARP）做了两类扫描，**均
 - 同时检查 HeadphoneSettingsUI 自身的 `*FeatureProviding` 表（按型号→Provider 的选择逻辑）是否可安全扩展
 
 在定位并确认分派方式之前，v0.4 保持「未实现」，不做猜测性映射。
+
+### 11.6 HeadphoneSettingsUI 的间接分派证据
+
+对 `artifacts-consumers/sym_26_6_2_HeadphoneSettingsUI.txt` 和
+`sym_27_0_HeadphoneSettingsUI.txt` 使用 `tools/compare_feature_conformances.py` 比较：
+
+- 两版的 `B768FeatureContent` 都有 `HeadphoneNameProviding`、
+  `SleepDetectionFeatureProviding`、`HeadphoneSettingsUIContentProvider`
+  三组协议 conformances（各自有 `Mc` descriptor 与 `WP` witness table）。
+- 27.0 的 `B868FeatureContent` 新增同样三组 conformances，以及
+  `featureType`、`platformName`、`singularName`、`marketingName` 四个 extension getter；
+  26.6.2 没有对应的 B868 符号。
+- 因此 `HeadphoneSettingsUI` **确实含有** B868 的 UI 语义实现。
+  工厂调用和类型 accessor 的直接分支为 0，并不能证明该框架与特性链无关；
+  Swift runtime 可通过协议见证表完成分派。这是符号证据，尚未定位到最终的 UI 入口。
+
+下一步应追踪 `HeadphoneSettingsUIContentProvider` 的泛型包装／调用者及
+`HeadphoneDevice.allFeatureContents` 的动态引用，确认 UI 侧如何获得 existential 数组。
+仅补 `HeadphoneManager` 类而缺少上述 UI conformances，不足以复现 27.0 的界面行为。
+
+### 11.7 回退路径与协议描述符引用扫描（补充证据）
+
+- `DefaultFeatureContentInternal` 在 26.6.2 与 27.0 **都**符合 `HeadphoneNameProviding` /
+  `SleepDetectionFeatureProviding` / `HeadphoneSettingsUIContentProvider`
+  → 未知型号存在「通用回退页」，v0.4 的收益主要在品牌/文案与专属行，而非「有没有页面」
+- 从一致性描述符 (ADMc) 反解协议描述符并对 5 个 dylib 做 ADRP/ADD 引用扫描：**0 引用**
+- 这印证了 §11.6：`as? any …UIContentProvider` 的合法转换走运行时一致性查找，
+  不引用类符号，"0 命中"不能排除关系；工厂消费者仍在已抽取集合之外
+- 已把 `Preferences.app`、`BluetoothManager`、`HeadphoneProxService`、`HearingAid`、
+  `headphonesd`、`HearingAidUIServer` 加入 DSC 抽取候选，下一步在这些二进制里找工厂调用方

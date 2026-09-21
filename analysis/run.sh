@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # DSC analysis helper - runs on macOS (or any host where `ipsw extract --dyld` works).
-# Usage: bash analysis/run.sh "27.0" [build]
+# Usage: bash analysis/run.sh "27.0" [build] [device]
 set -uo pipefail
 
 VERSION="${1:-27.0}"
@@ -22,15 +22,26 @@ run_to() {
   echo "--> [timeout ${t}s] $*"
   perl -e 'alarm shift; exec @ARGV' "$t" "$@" && rc=0 || rc=$?
   echo "    rc=$rc elapsed=$(( $(date +%s) - s ))s : $*"
-  return 0
+  return $rc
 }
 
-echo "==> downloading DSC for iOS $VERSION (device $DEVICE)"
+echo "==> fetching DSC for iOS $VERSION ($DEVICE)"
 args=(download ipsw --device "$DEVICE" --version "$VERSION" --dyld --dyld-arch arm64e --confirm -o "$dir")
 if [[ -n "$BUILD" ]]; then
   args+=(--build "$BUILD")
 fi
 run_to 2400 ipsw "${args[@]}"
+
+# iOS 15 and earlier have no cryptex: remote DSC extraction is unsupported, so
+# fall back to downloading the full IPSW and extracting locally.
+if ! find "$dir" -type f -name 'dyld_shared_cache_arm64e' | grep -q .; then
+  echo "==> remote DSC unsupported for iOS $VERSION, falling back to full IPSW"
+  run_to 3600 ipsw download ipsw --device "$DEVICE" --version "$VERSION" --confirm -o "$dir"
+  IPSW="$(find "$dir" -maxdepth 2 -type f -name '*.ipsw' | head -1)"
+  if [[ -n "$IPSW" ]]; then
+    run_to 2400 ipsw extract --dyld --dyld-arch arm64e --output "$dir" "$IPSW"
+  fi
+fi
 
 DSCS=()
 while IFS= read -r line; do

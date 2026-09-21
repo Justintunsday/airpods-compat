@@ -77,25 +77,22 @@ for dsc in "${DSCS[@]}"; do
     "/System/Library/Frameworks/CoreBluetooth.framework/CoreBluetooth"
     "/System/Library/PrivateFrameworks/HeadphoneManager.framework/HeadphoneManager"
     "/System/Library/PrivateFrameworks/HeadphoneSettingsUI.framework/HeadphoneSettingsUI"
-    "/System/Library/PrivateFrameworks/HeadphoneConfigs.framework/HeadphoneConfigs"
-    "/System/Library/PrivateFrameworks/MobileBluetooth.framework/MobileBluetooth"
-    "/System/Library/PreferenceBundles/BluetoothSettings.bundle/BluetoothSettings"
-    "/Applications/Preferences.app/Preferences"
-    "/System/Library/PrivateFrameworks/BluetoothManager.framework/BluetoothManager"
-    "/System/Library/PrivateFrameworks/HeadphoneProxService.framework/HeadphoneProxService"
-    "/System/Library/PrivateFrameworks/HearingAid.framework/HearingAid"
-    "/usr/libexec/headphonesd"
-    "/usr/libexec/HearingAidUIServer"
   )
+  # consumer images only where the Swift dispatch trace matters
+  case "$VERSION" in
+    26.6.2|27.0)
+      IMAGES+=(
+        "/System/Library/PrivateFrameworks/HeadphoneConfigs.framework/HeadphoneConfigs"
+        "/System/Library/PrivateFrameworks/MobileBluetooth.framework/MobileBluetooth"
+        "/System/Library/PreferenceBundles/BluetoothSettings.bundle/BluetoothSettings"
+      ) ;;
+  esac
   mkdir -p "$b/dylibs"
   for img in "${IMAGES[@]}"; do
     name="$(basename "$img")"
-    run_to 600 ipsw dyld macho "$dsc" "$img" --objc --symbols --strings --extract --output "$b/dylibs" >>"$b/macho_$name.txt" 2>&1
+    run_to 300 ipsw dyld macho "$dsc" "$img" --objc --symbols --strings --extract --output "$b/dylibs" >>"$b/macho_$name.txt" 2>&1
     run_to 120 ipsw dyld image "$dsc" "$img" >"$b/image_$name.txt" 2>&1
   done
-
-  # note: `ipsw dyld xref` is WIP and does not finish on split caches
-  # (1h+ on --all). If needed run analysis/xref.sh manually.
 done
 
 echo "==> done"

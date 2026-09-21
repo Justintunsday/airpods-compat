@@ -459,8 +459,16 @@ ret
 
 - iOS 18 上 AirPods 4 的设置页走的是**旧架构**（`FeatureOptionSet` 时代），
   没有工厂/`featureContent` 可替换；因此「退而借用 B698/其他类」在这条链上不成立。
-- <18 的版本连 `HeadphoneManager.framework` 都没有，v0.3 的 UARP 注册与
-  显示名表是那些版本上仅有的兼容层；要为它们加 AirPods 5 设置 UI 属于另一个
-  独立项目（旧的 BluetoothSettings/HearingAid 路径）。
+- 旧架构实测（18.6.2 产物）：
+  - CoreUARP 有 `UARPSupportedAccessoryA3056/A3057` 等 AirPods 4 配件类（AirPods 5 为 0）；
+  - CoreBluetooth 有 `"AirPods 4"` / `"AirPods 4 (ANC)"` 名称与 `"B768 SW"` 字符串；
+  - `HeadphoneConfigs` / `BluetoothSettings` 对 A305x/AirPods 4/B768/FeatureOptionSet
+    **零型号特判** → 设置页内容由 UARP 配件元数据 + CoreBluetooth 属性驱动，
+    不是按型号硬编码的 UI 分支。
+- 结论：<26 的版本不需要（也无法）做 FeatureContent 移植；v0.3 的动态 UARP 注册
+  （缺失型号补 `UARPSupportedAccessory*`，抽象基类优先）+ 显示名表就是旧架构下
+  正确的兼容层。AirPods 5 在旧版本的表现 ≈ AirPods 4 在同版本的基线。
+- <18 的版本连 `HeadphoneManager.framework` 都没有；若要再往下做（例如旧功能位、
+  图片资产），那是独立项目，不属于 v0.4。
 - 因此 v0.4 的适用范围 = 主目标 iOS 26.6.2（及任何存在 FeatureContent 链的
   26.x/27 之前的版本）；其余版本保持 v0.3 行为，不回归。

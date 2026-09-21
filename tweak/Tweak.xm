@@ -75,6 +75,28 @@ static NSArray *AC_alternativeAppleModelNumbers(Class self, SEL _cmd) {
     return ACModelForClass(self)[@"alternativeAppleModelNumbers"];
 }
 
+// Instance-side overrides: the inherited -init derives identifier/hwID from
+// the *base* class statics, which makes all our accessories compare equal.
+static NSString *ACInstModelNumber(id self, SEL _cmd) {
+    NSDictionary *model = gClassTable[NSStringFromClass(object_getClass(self))]
+        ?: gClassTable[NSStringFromClass([self class])];
+    return model[@"appleModelNumber"];
+}
+
+static NSString *ACInstIdentifier(id self, SEL _cmd) {
+    return ACInstModelNumber(self, _cmd);
+}
+
+static NSString *ACInstMobileAssetModelNumber(id self, SEL _cmd) {
+    NSString *value = ACInstModelNumber(self, _cmd);
+    return value;
+}
+
+static NSArray *ACInstAlternativeModelNumbers(id self, SEL _cmd) {
+    NSDictionary *model = gClassTable[NSStringFromClass([self class])];
+    return model[@"alternativeAppleModelNumbers"];
+}
+
 static Class ACFindConcreteSiblingOf(Class abstractBase) {
     unsigned int count = 0;
     Class *classes = objc_copyClassList(&count);
@@ -133,6 +155,10 @@ static void ACRegisterUARPAccessories(void) {
             class_addMethod(meta, sel_registerName("appleModelNumber"), (IMP)AC_appleModelNumber, "@@:");
             class_addMethod(meta, sel_registerName("mobileAssetAppleModelNumber"), (IMP)AC_mobileAssetAppleModelNumber, "@@:");
             class_addMethod(meta, sel_registerName("alternativeAppleModelNumbers"), (IMP)AC_alternativeAppleModelNumbers, "@@:");
+            class_addMethod(cls, sel_registerName("appleModelNumber"), (IMP)ACInstModelNumber, "@@:");
+            class_addMethod(cls, sel_registerName("identifier"), (IMP)ACInstIdentifier, "@@:");
+            class_addMethod(cls, sel_registerName("mobileAssetAppleModelNumber"), (IMP)ACInstMobileAssetModelNumber, "@@:");
+            class_addMethod(cls, sel_registerName("alternativeAppleModelNumbers"), (IMP)ACInstAlternativeModelNumbers, "@@:");
             gClassTable[clsName] = model;
             objc_registerClassPair(cls);
         }

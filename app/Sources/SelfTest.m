@@ -109,6 +109,31 @@ static id ACDryAlternativeModelNumbers(Class self, SEL _cmd) {
     return gDryRunTable[NSStringFromClass(self)][@"alt"];
 }
 
+static id ACDryInstAppleModelNumber(id self, SEL _cmd) {
+    return gDryRunTable[NSStringFromClass([self class])][@"model"];
+}
+
+static id ACDryInstIdentifier(id self, SEL _cmd) {
+    return ACDryInstAppleModelNumber(self, _cmd);
+}
+
+static id ACDryInstMobileAssetModelNumber(id self, SEL _cmd) {
+    return ACDryInstAppleModelNumber(self, _cmd);
+}
+
+static id ACDryInstAlternativeModelNumbers(id self, SEL _cmd) {
+    return gDryRunTable[NSStringFromClass([self class])][@"alt"];
+}
+
+static NSString *ACKVC(id object, NSString *key) {
+    @try {
+        id value = [object valueForKey:key];
+        return value ? [value description] : @"(nil)";
+    } @catch (__unused NSException *e) {
+        return @"(n/a)";
+    }
+}
+
 static Class ACFirstAvailableClass(NSArray<NSString *> *names) {
     for (NSString *name in names) {
         Class cls = NSClassFromString(name);
@@ -149,8 +174,15 @@ static void ACRunRegistrationDryRun(NSMutableString *out) {
     NSSet *before = ACCallClass(manager, @"setOfAccessories");
     [out appendFormat:@"  注册前 setOfAccessories 数量: %lu\n", (unsigned long)before.count];
 
+    id nativeHit = nil;
+    @try {
+        nativeHit = ((id (*)(id, SEL, id))objc_msgSend)(manager,
+            NSSelectorFromString(@"findByIdentifier:"), @"A3064");
+    } @catch (__unused NSException *e) {}
+    [out appendFormat:@"  原生对照 findByIdentifier:A3064 -> %@\n", nativeHit ? @"命中" : @"未命中"];
+
     gDryRunTable = [NSMutableDictionary dictionary];
-    NSUInteger registered = 0;
+    NSUInteger registered = 0, alreadyRegistered = 0, createdNow = 0, expected = 0;
 
     for (NSDictionary *model in ACTestModels()) {
         NSString *realName = [@"UARPSupportedAccessory" stringByAppendingString:model[@"model"]];
@@ -165,8 +197,10 @@ static void ACRunRegistrationDryRun(NSMutableString *out) {
             continue;
         }
 
+        expected++;
         NSString *clsName = [@"AirPodsCompat_" stringByAppendingString:model[@"model"]];
         Class cls = NSClassFromString(clsName);
+        BOOL preexisting = (cls != Nil);
         if (!cls) {
             cls = objc_allocateClassPair(base, clsName.UTF8String, 0);
             if (!cls) {
@@ -179,8 +213,13 @@ static void ACRunRegistrationDryRun(NSMutableString *out) {
             class_addMethod(meta, NSSelectorFromString(@"appleModelNumber"), (IMP)ACDryAppleModelNumber, "@@:");
             class_addMethod(meta, NSSelectorFromString(@"mobileAssetAppleModelNumber"), (IMP)ACDryMobileAssetModelNumber, "@@:");
             class_addMethod(meta, NSSelectorFromString(@"alternativeAppleModelNumbers"), (IMP)ACDryAlternativeModelNumbers, "@@:");
+            class_addMethod(cls, NSSelectorFromString(@"appleModelNumber"), (IMP)ACDryInstAppleModelNumber, "@@:");
+            class_addMethod(cls, NSSelectorFromString(@"identifier"), (IMP)ACDryInstIdentifier, "@@:");
+            class_addMethod(cls, NSSelectorFromString(@"mobileAssetAppleModelNumber"), (IMP)ACDryInstMobileAssetModelNumber, "@@:");
+            class_addMethod(cls, NSSelectorFromString(@"alternativeAppleModelNumbers"), (IMP)ACDryInstAlternativeModelNumbers, "@@:");
             gDryRunTable[clsName] = model;
             objc_registerClassPair(cls);
+            createdNow++;
         }
 
         id accessory = ((id (*)(id, SEL))objc_msgSend)((id)[cls alloc], NSSelectorFromString(@"init"));
@@ -193,8 +232,13 @@ static void ACRunRegistrationDryRun(NSMutableString *out) {
             ((void (*)(id, SEL, id))objc_msgSend)(manager,
                 NSSelectorFromString(@"addSupportedAccessory:"), accessory);
             registered++;
-            [out appendFormat:@"  [ok] %@ (productID=0x%x, base=%@)\n",
+            if (preexisting) alreadyRegistered++;
+            [out appendFormat:@"  [ok%@] %@ (productID=0x%x, base=%@)\n",
+                 preexisting ? @"·已注册" : @"",
                  model[@"model"], [model[@"pid"] unsignedIntValue], NSStringFromClass(base)];
+            [out appendFormat:@"       props: identifier=%@ hwID=%@ appleModelNumber=%@\n",
+                 ACKVC(accessory, @"identifier"), ACKVC(accessory, @"hwID"),
+                 ACKVC(accessory, @"appleModelNumber")];
             NSString *found = nil;
             @try {
                 id result = ((id (*)(id, SEL, id))objc_msgSend)(manager,
@@ -210,9 +254,13 @@ static void ACRunRegistrationDryRun(NSMutableString *out) {
     }
 
     NSSet *after = ACCallClass(manager, @"setOfAccessories");
+    BOOL grew = after.count > before.count;
     [out appendFormat:@"  注册后 setOfAccessories 数量: %lu（新增 %lu）\n",
         (unsigned long)after.count, (unsigned long)(after.count - before.count)];
-    [out appendFormat:@"  干跑结果: %@\n", (registered > 0 && after.count > before.count) ? @"PASS ✅" : @"FAIL ❌"];
+    BOOL pass = (registered == expected) && (createdNow == 0 || grew);
+    [out appendFormat:@"  干跑结果: %@ (expected=%lu registered=%lu created=%lu already=%lu grew=%d)\n",
+        pass ? @"PASS ✅" : @"FAIL ❌", (unsigned long)expected, (unsigned long)registered,
+        (unsigned long)createdNow, (unsigned long)alreadyRegistered, grew];
 }
 
 #pragma mark - entry point

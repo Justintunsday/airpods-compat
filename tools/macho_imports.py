@@ -29,7 +29,7 @@ def parse(path):
         offset += cmdsize
 
     if not symtab:
-        return [], []
+        return [], [], []
 
     symoff, nsyms, stroff, strsize = symtab
     strings = data[stroff:stroff + strsize]
@@ -49,7 +49,7 @@ def parse(path):
 
     indirect_names = []
     if dysymtab:
-        indirect_off, indirect_count = dysymtab[13], dysymtab[14]
+        indirect_off, indirect_count = dysymtab[12], dysymtab[13]
         for i in range(indirect_count):
             index = struct.unpack_from("<I", data, indirect_off + i * 4)[0]
             if index != 0x80000000 and index < len(symbols):

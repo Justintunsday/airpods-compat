@@ -303,3 +303,142 @@ witness table、不加猜测性 hook。转入第 3 项：真机验证通用设�
 结论：v0.4 的静态定位与真机验证目前都缺少可用手段；保持未实现、不做猜测性实现。
 可选项：(a) 收尾归档并打 tag；(b) 投入实现完整 arm64e chained fixups 解码器（独立研究分支）；
 (c) 之后有真机时再验证与推进。
+
+### 11.12 消费者已定位：HeadphoneProxService.app（决定性证据，27.0）
+
+§11.8~§11.11 的"对外无调用方"结论来自两个盲区，现已排除：
+
+1. **DSC 抽取产物丢失跨模块绑定信息**：抽取出的 dylib 没有 `LC_DYLD_CHAINED_FIXUPS`，
+   `LC_DYSYMTAB` 的 indirect symtab 在 27.0 产物里索引越界（指向 DSC 全局符号表），
+   ipsw `-n` 也不显示 Swift 未定义符号 → 消费者即使调用也扫不出来。
+   `ipsw dyld imports` 的 "In FileSystem DMG (Apps)" 一节给出了真正的消费者：
+   `/Applications/HeadphoneProxService.app/HeadphoneProxService`（**两版都导入 HeadphoneManager**）。
+   该 App 在文件系统 DMG 内，从未被任何 DSC 抽取流程覆盖，因此历次扫描自然 0 命中。
+
+2. **抽取产物里的 ADRP/ADD 引用扫描工具链有缺陷**（本次修复）：
+   - `tools/macho_imports.py` 的 LC_DYSYMTAB 字段索引 off-by-one
+     （indirectsymoff 应为 `[12]`/`[13]`，原代码用 `[13]`/`[14]`）→ 已修。
+   - `disass_swift.py` 从段起点线性反汇编，capstone 遇无效指令即停（抽取产物的
+     `__TEXT` 起点是 Mach 头，解码 17 条即中断）→ 任何"线性反汇编 0 命中"都不可信；
+     正例（`_vau` 访问全局变量）已用编码模式扫描验证。
+   - 新增 `tools/stub_map.py`：在符号表完整的普通 Mach-O 上，
+     把 `__auth_stubs`/`__got` 槽位反解到导入符号名。
+
+**27.0 App 实证**（本地解密 OS DMG + dissect.apfs 提取，路径
+`/Applications/HeadphoneProxService.app/HeadphoneProxService`，1.82MB）：
+
+未定义符号直接点名入口（`ipsw macho info -n`）：
+
+- `allFeatureContents(productID:device:)`（工厂）
+- `HeadphoneDevice.featureContent` getter（唯一消费者侧的 getter 引用）
+- `FeatureContentType` 协议描述符（`Mp`）、B788 `CMa`、B868 `productIDs` getter、B515d `device` getter
+- 另导入 `HeadphoneManager.HeadphoneManager.shared/connectedHeadphones`
+
+stub 映射（`tools/stub_map.py`）：
+
+| stub | 符号 | 调用点 |
+|---|---|---|
+| `0x100118010` | `HeadphoneDevice.featureContent` | `0x100010154`、`0x100038584`、`0x10000cba0`、`0x1000f20c4` |
+| `0x100118020` | `allFeatureContents(productID:device:)` | `0x1000d7358` |
+| `0x1001181a0` | `B788FeatureContentCMa` | ×5 |
+| `0x1001181b0` | `B868FeatureContent.productIDs` | `0x10000ba04` |
+| `0x1001181c0` | `B515dFeatureContent.device` | ×2 |
+
+**调用模式**（`0x100010154` 与 `0x100038584` 完全一致）：
+
+```
+HeadphoneManager.shared.connectedHeadphones          ; 按地址查设备
+device.featureContent                               ; bl <stub>，返回 any FeatureContentType?（5 字 existential 栈缓冲）
+cbz <metadata 字>                                   ; nil 过滤
+bl 0x100008788（两对 TargetType/Witness）            ; 目标与见证
+bl _swift_dynamicCast                               ; as? 到 UI provider 协议
+```
+
+即：**消费者通过 `featureContent` existential + `swift_dynamicCast` 做 UI 分派**，
+不是类 vtable 直接调用——这解释了为什么 getter 在模块内/外都没有 `bl` 调用方。
+
+**可验证的 PID→UI 选择逻辑（27.0，`0x10000b9f0`，仅 16 条指令）**：
+
+```
+x0 = B868FeatureContent 实例
+w0 = B868FeatureContent.productIDs                  ; 工厂内注册的 PID
+w10 = 0x2036
+cmp w0, w10
+csel x0, 0x10015cb40, 0x10015caa8, eq               ; PID==0x2036 ? type_B : type_A
+ret
+```
+
+这是明确的"按 productID 选择 UI 类型"入口（0x2036 = AirPods 5 四 PID 之一），
+满足任务边界第 3 条"找到可验证入口"的要求；**未涉及 B768 映射，也未伪造见证表**。
+
+**工厂的 App 侧包装**（LC_FUNCTION_STARTS `0x1000d7328`）：
+`HeadphoneDevice.CMa` + `HeadphoneDevice.default` → 调用工厂后把数组里 metadata 非 0
+的元素（5 字 existential）compact 进新数组返回，不做类型判断。
+
+### 11.13 26.6.2 侧对照与 v0.4 边界结论
+
+26.6.2 IPSW 的 `SystemVolume` = `094-97246-090.dmg.aea`（7.8GB AEA → 9.1GB APFS，
+`ipsw fw aea -k` + `-b` 解密，dissect.apfs 提取）：
+`/Applications/HeadphoneProxService.app/HeadphoneProxService`（1.65MB）已取得。
+
+两版 App 结构对照（stub 反解 + `bl` 扫描）：
+
+| 项 | 27.0 (24A437) | 26.6.2 (23G90) |
+|---|---|---|
+| 导入工厂/getter/协议描述符 | 是 | 是 |
+| `featureContent` getter 调用点 | 4 | 3 |
+| 工厂调用点 | 1 | 1 |
+| `B788FeatureContentCMa` 调用点 | 5 | 5 |
+| `B515dFeatureContent.device` 调用点 | 2 | 2 |
+| `productIDs` getter 导入 | `B868` | **无** |
+| 硬编码 PID（movz 扫描 `0x2036/0x2030/0x2037/0x2032`） | **仅 0x2036**（`0x10000ba18`） | **0 处** |
+
+即：27.0 新增的「按 PID 选 UI 类型」逻辑（§11.12）在 26.6.2 **不存在**，
+且它选出的两个类型常量（`0x10015caa8`/`0x10015cb40`）是 27.0 App 自身的新结构，
+26.6.2 没有对应物；选择器函数无直接 `bl` 调用方（表驱动/闭包间接调用）。
+
+结论（按任务边界执行）：
+
+- 边界第 3 条要求「找到可验证入口」→ **已满足**：入口是 HeadphoneProxService 的
+  `allFeatureContents`/`featureContent` 调用点与（27.0 的）PID 选择器。
+- 但边界同时要求「只对 4 个 AirPods 5 PID 补 UI 选择逻辑、不许映射到 B768、
+  不许伪造 witness table」→ 在 26.6.2 上，4 个 PID 没有可用的目标 UI 类型
+  （27.0 的类型是 App 新结构），若把 4 个 PID 指到 26.6.2 既有类型
+  （B768/B788 等）即构成被禁止的映射；自建类型则绕不开见证表。
+- 因此 v0.4 **保持未实现**：本节的 PID/调用点数据已足以在任何后续版本
+  实现最小 hook，但目标 UI 的取舍属于产品决定，不能在边界内替用户选定。
+
+**工具沉淀（本次新增/修复）**：`tools/stub_map.py`（stub/GOT→符号名，
+普通 Mach-O 有效）、`tools/disass_context.py`（函数边界感知 + stub/符号注释反汇编）、
+`tools/macho_imports.py`（修复 LC_DYSYMTAB off-by-one）。
+`find_refs.py` 在 PowerShell 下 `--targets a,b` 会被当作两个参数，
+请逐个传或加引号。
+
+### 11.14 v0.4 实现（用户授权：借用 AirPods 4 (ANC) UI）
+
+用户决定：4 个 AirPods 5 PID 在 26.6.2 上借用 AirPods 4 (ANC) 的 UI。
+实现取**唯一工厂入口**，而不是在每个消费者里做映射：
+
+- 目标符号：`HeadphoneDevice.allFeatureContents(productID:device:)`
+  （26.6.2 `0x1dcbbfdcc`，唯二调用方：`featureContent` getter 与
+  HeadphoneProxService 的包装函数；两版 App 均直接导入该符号）
+- 钩子：`MSHookFunction`；productID ∈ {0x2036, 0x2030, 0x2037, 0x2032} 时
+  以 `0x201b`（AirPods 4 (ANC)，`models/airpods.json` 已确认）调用原函数
+- 版本门控：`dlsym("...B868FeatureContentCMa")` 存在（iOS 27+）则不安装，
+  避免 27.0 上 B768 + B868 同时命中产生重复内容
+- 注入面：`AirPodsCompat.plist` 新增可执行文件 `HeadphoneProxService`
+  （Preferences 已在 Bundles 中）
+
+边界合规性：
+
+- B768FeatureContent 是**系统真实类**，见证表/协议一致性全部来自 Apple 二进制，
+  未伪造任何 witness table，tweak 内不含任何 B768 实现代码；
+- 只替换工厂入参，不改变设备对象（CBDevice 仍是真实 AirPods 5），
+  显示名仍由 `CBDevice.productName` 名称表给出 "AirPods 5"；
+- 27.0 及以后原生支持，不改行为。
+
+已知风险（待真机验证）：设置页/配对卡片的图标与文案可能显示 AirPods 4 (ANC)
+资产；若 26.x 小版本改动 Swift 符号名，钩子会安全跳过并打日志。
+
+「深挖移植」（在 26.6.2 上复现 B868 特有 UI）仍是未决后续项：
+它需要 27.0 App/HeadphoneSettingsUI 的新类型，属于跨版本 UI 移植而非宏替换。

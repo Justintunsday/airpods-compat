@@ -16,10 +16,19 @@
 //   -[UARPSupportedAccessoryManager addSupportedAccessory:]
 //   -[CBDevice productName]
 //   +[CBAccessoryLogging getProductNameFromProductID:]
+//
+// Hook targets (v0.4, from the iOS 26.6.2/27.0 HeadphoneManager analysis):
+//   HeadphoneDevice.allFeatureContents(productID:device:) - on iOS < 27
+//     substitute the AirPods 5 PIDs with the AirPods 4 (ANC) PID so the
+//     existing, genuine B768FeatureContent + witness tables drive the UI.
+//     On iOS 27+ the native B868FeatureContent already handles these PIDs,
+//     so the hook is not installed (version-gated via dlsym).
+//     See docs/ANALYSIS.md 11.12-11.14 for the call-chain evidence.
 
 #import <Foundation/Foundation.h>
 #import <objc/runtime.h>
 #import <substrate.h>
+#import <dlfcn.h>
 
 #if __has_include(<rootless.h>)
 #import <rootless.h>
@@ -203,6 +212,56 @@ static void ACRegisterUARPAccessories(void) {
     AC_LOG(@"registered %lu accessor(ies)", (unsigned long)registered);
 }
 
+#pragma mark - AirPods 5 -> AirPods 4 (ANC) feature-content borrowing (v0.4)
+
+// HeadphoneDevice.allFeatureContents(productID:device:) is the single factory
+// behind HeadphoneDevice.featureContent and every UI that consumes it
+// (HeadphoneSettingsUI in Preferences, HeadphoneProxService pairing cards).
+// iOS 26.6.2 has no B868FeatureContent for the AirPods 5 PIDs, so those
+// devices fall back to the generic content. By feeding the factory the
+// AirPods 4 (ANC) PID we get the real B768FeatureContent object - no witness
+// table is faked and no B768 UI code is shipped in the tweak.
+static const uint32_t kAirPods5ProductIDs[] = { 0x2036, 0x2030, 0x2037, 0x2032 };
+static const uint32_t kAirPods4AncProductID = 0x201b;
+
+static id (*orig_allFeatureContents)(uint32_t productID, id device);
+static BOOL gHasB868FeatureContent = NO;
+
+static id AC_allFeatureContents(uint32_t productID, id device) {
+    if (!gHasB868FeatureContent) {
+        for (size_t i = 0; i < sizeof(kAirPods5ProductIDs) / sizeof(kAirPods5ProductIDs[0]); i++) {
+            if (productID == kAirPods5ProductIDs[i]) {
+                AC_LOG(@"borrowing AirPods 4 (ANC) feature content for productID=0x%x", productID);
+                return orig_allFeatureContents(kAirPods4AncProductID, device);
+            }
+        }
+    }
+    return orig_allFeatureContents(productID, device);
+}
+
+static void ACInstallFeatureContentBorrowing(void) {
+    gHasB868FeatureContent =
+        dlsym(RTLD_DEFAULT, "_$s16HeadphoneManager18B868FeatureContentCMa") != NULL;
+    if (!gHasB868FeatureContent) {
+        // belt and braces: if dlsym cannot see the shared-cache export, fall
+        // back to the OS major version (iOS 27 introduced B868FeatureContent).
+        gHasB868FeatureContent =
+            NSProcessInfo.processInfo.operatingSystemVersion.majorVersion >= 27;
+    }
+    if (gHasB868FeatureContent) {
+        AC_LOG(@"native AirPods 5 feature content present; hook skipped");
+        return;
+    }
+    void *factory = dlsym(RTLD_DEFAULT,
+        "_$s16HeadphoneManager0A6DeviceC18allFeatureContents9productID6deviceSayAA0aE11ContentType_pSgGSo09CBProductH0V_ACtFZ");
+    if (!factory) {
+        AC_LOG(@"allFeatureContents not present in %@; skipping", ACProcessName());
+        return;
+    }
+    MSHookFunction(factory, (void *)AC_allFeatureContents, (void **)&orig_allFeatureContents);
+    AC_LOG(@"installed AirPods 4 (ANC) feature-content borrowing hook");
+}
+
 #pragma mark - CoreBluetooth display names
 
 @interface CBDevice : NSObject
@@ -239,6 +298,8 @@ static void ACRegisterUARPAccessories(void) {
             AC_LOG(@"disabled via prefs");
             return;
         }
+
+        ACInstallFeatureContentBorrowing();
 
         NSString *guard = ACSupportPath(@".registration-in-progress");
         NSFileManager *fm = [NSFileManager defaultManager];

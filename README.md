@@ -68,7 +68,8 @@
   build-app.yml      # XcodeGen + xcodebuild 出未签名 ipa
   test-app.yml       # iOS 模拟器单元测试
 analysis/run.sh      # DSC 分析脚本（远程抽 DSC + 定向查询 + dylib 抽取）
-tools/extract_airpods_models.py  # 从 CoreUARP dylib 提取全型号表
+tools/               # 分析脚本：extract_airpods_models（CoreUARP 型号表）、
+                     # stub_map（stub/GOT→符号）、disass_context（调用点反汇编）等
 models/airpods.json  # 型号表源数据
 tweak/               # Theos 包（AirPodsCompat.dylib + 型号表 + 注入 filter）
 app/                 # SwiftUI 控制 App + 非越狱自检 + 单元测试
@@ -101,9 +102,13 @@ docs/ANALYSIS.md     # 分析报告（型号映射、hook 目标、风险）
 - **显示名**：`AirPods 5`、`AirPods 5 (Wireless Charging)`（27.0 位于 CoreBluetooth）
 - **UARP 配件类**：A3440/A3441/A3529/A3529USB/A3530USB/A3532/A3533
   （A3439、A3531 由备选型号覆盖）
-- **Swift 功能链**：`B868FeatureContent` 位于 `HeadphoneManager`；
-  `HeadphoneSettingsUI` 中另有 `B868FeatureProviding.swift` 字符串线索
-  （v0.4 计划；当前 deb 尚未实现）
+- **Swift 功能链（v0.4 已实现）**：27.0 的 `B868FeatureContent` 在 26.6.2 不存在。
+  tweak 在唯一工厂 `HeadphoneDevice.allFeatureContents(productID:device:)` 入口把
+  4 个 AirPods 5 PID（0x2036/0x2030/0x2037/0x2032）替换为 AirPods 4 (ANC) 的
+  0x201b，复用系统真实的 `B768FeatureContent` 与其见证表（不伪造 witness table、
+  tweak 内不含 B768 实现代码）；注入范围含 `HeadphoneProxService` 与 Preferences；
+  iOS 27+ 检测到 `B868FeatureContent` 原生支持时自动跳过。
+  调用链证据见 `docs/ANALYSIS.md` §11.12–§11.14。
 - **型号 ID 表**：A3439…A3533（A3531 通过 A3532 的备选型号覆盖）
 
 参考：Apple《Identify your AirPods》 <https://support.apple.com/en-us/109525>

@@ -35,7 +35,10 @@ jobs:
         run: |
           make -C tweak package FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=rootless
           mkdir -p dist
-          cp tweak/packages/*.deb dist/
+          for f in tweak/packages/*.deb; do
+            arch="$(basename "$f" .deb | awk -F_ '{print $NF}')"
+            cp "$f" "dist/AirPodsCompat-rootless-${arch}.deb"
+          done
           ls -la dist/
 
       - name: Build rootful package
@@ -45,7 +48,18 @@ jobs:
           make -C tweak package FINALPACKAGE=1 \
             THEOS_PACKAGE_ARCH=iphoneos-arm \
             THEOS_PACKAGE_INSTALL_PREFIX=
-          cp tweak/packages/*.deb dist/
+          for f in tweak/packages/*.deb; do
+            arch="$(basename "$f" .deb | awk -F_ '{print $NF}')"
+            cp "$f" "dist/AirPodsCompat-rootful-${arch}.deb"
+          done
+          cat > dist/INSTALL.txt <<'EOF'
+AirPodsCompat packages
+  AirPodsCompat-rootless-iphoneos-arm64.deb  ->  rootless jailbreaks (Dopamine / ElleKit / roothide), installs to /var/jb
+  AirPodsCompat-rootful-iphoneos-arm.deb     ->  rootful jailbreaks (unc0ver / checkra1n / palera1n), installs to /
+
+Install the one that matches your jailbreak with Sileo/Zebra (or: dpkg -i <deb>), then reboot userspace.
+Check with: dpkg-deb -f <deb> Architecture
+EOF
           ls -la dist/
 
       - name: Upload debs

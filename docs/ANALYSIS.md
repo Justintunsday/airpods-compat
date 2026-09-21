@@ -258,3 +258,25 @@ indirect symtab），即缓存内的 rebase 信息在抽取时未保留 → 元�
 
 因此第 1 项任务在现有工具下**无法完成**，按任务边界第 2 条：不做 B768 映射、不伪造
 witness table、不加猜测性 hook。转入第 3 项：真机验证通用设置页与识别效果。
+
+### 11.10 vtable 槽位定位尝试（第 1 项收尾）
+
+在 xref 不可用后，尝试自行恢复 vtable 槽位：
+
+1. `HeadphoneDevice` 无 ObjC 元数据符号（无 `__DATA__TtC…HeadphoneDevice`），只有 Swift 符号
+   `CMa/CMo/CMf/CN`（27.0：`CMf@0x27090e3f8`、`CN@0x27090e410`）
+2. 抽取出的 dylib 中，`CMf` 槽位为 `0`、数据段指针普遍被清零（抽取时未保留
+   chained fixup / rebase），因此无法从抽取产物恢复槽位
+3. 新增 `tools/dsc_read.py`：直接解析各分片自带头部，实现 VM→(分片文件, 偏移) 读取
+   （27.0 的 `CMf` 位于 `.54.dylddata`；26.6.2 位于 `.33.dylddata`）
+4. 但 DSC 里 `CMf` 本身为 `0`（Swift 类元数据惰性初始化），元数据对象不在邻近窗口；
+   在 `CMf` ±8KB 窗口内用 raw/low32/low36/low43 及“相对 image base”等常见 chained
+   fixup 解码均**未命中** getter 地址
+
+要完成静态定位，需实现 arm64e chained fixups 的完整解码（`starts_in_image` →
+按页链式遍历）+ Swift 类元数据布局定位（描述符 → method descriptors → vtable 序号）。
+工作量与不确定性都较大；按任务边界第 2 条，**不做猜测性实现**，
+优先转真机验证（第 3 项）以获得真实行为证据。
+
+工具沉淀（可复用）：`dsc_read.py`（DSC 按地址读取）、`find_refs.py`（ADRP/ADD 模式扫描）、
+`find_callers.py`（b/bl 编码扫描，含正反例自检）、`disass_swift.py`、`dump_feature_closures.py`。

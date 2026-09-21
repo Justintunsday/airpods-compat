@@ -7,9 +7,10 @@
       "productID": 8209,
       "display": "A2513",
       "family": "max",
+      "tier": "extended",
       "baseClasses": [
-        "UARPSupportedAccessoryA3454",
-        "UARPSupportedAccessoryBeatsBluetooth"
+        "UARPSupportedAccessoryBeatsBluetooth",
+        "UARPSupportedAccessoryA3454"
       ],
       "alt": [
         "A2512"
@@ -22,12 +23,13 @@
       "productID": 8213,
       "display": "AirPods Pro 2 (Charging Case)",
       "family": "case",
+      "tier": "extended",
       "baseClasses": [
+        "UARPSupportedAccessoryAirPodsCase",
         "UARPSupportedAccessoryA3122",
         "UARPSupportedAccessoryA3059",
         "UARPSupportedAccessoryA2968",
-        "UARPSupportedAccessoryA2617",
-        "UARPSupportedAccessoryAirPodsCase"
+        "UARPSupportedAccessoryA2617"
       ],
       "alt": [
         "A2617"
@@ -40,12 +42,13 @@
       "productID": 4373,
       "display": "A2617USB",
       "family": "caseUSB",
+      "tier": "extended",
       "baseClasses": [
+        "UARPSupportedAccessoryAirPodsCaseUSB",
         "UARPSupportedAccessoryA3122USB",
         "UARPSupportedAccessoryA3059USB",
         "UARPSupportedAccessoryA2968USB",
-        "UARPSupportedAccessoryA2617USB",
-        "UARPSupportedAccessoryAirPodsCaseUSB"
+        "UARPSupportedAccessoryA2617USB"
       ]
     },
     {
@@ -55,12 +58,13 @@
       "productID": 8212,
       "display": "AirPods Pro 2",
       "family": "bud",
+      "tier": "extended",
       "baseClasses": [
+        "UARPSupportedAccessoryAirPodsBud",
         "UARPSupportedAccessoryA3064",
         "UARPSupportedAccessoryA3048",
         "UARPSupportedAccessoryA3053",
-        "UARPSupportedAccessoryA2699",
-        "UARPSupportedAccessoryAirPodsBud"
+        "UARPSupportedAccessoryA2699"
       ],
       "alt": [
         "A2618"
@@ -73,9 +77,10 @@
       "productID": 8214,
       "display": "A2871",
       "family": "max",
+      "tier": "extended",
       "baseClasses": [
-        "UARPSupportedAccessoryA3454",
-        "UARPSupportedAccessoryBeatsBluetooth"
+        "UARPSupportedAccessoryBeatsBluetooth",
+        "UARPSupportedAccessoryA3454"
       ],
       "alt": [
         "A2872"
@@ -88,9 +93,10 @@
       "productID": 8215,
       "display": "A2924",
       "family": "max",
+      "tier": "extended",
       "baseClasses": [
-        "UARPSupportedAccessoryA3454",
-        "UARPSupportedAccessoryBeatsBluetooth"
+        "UARPSupportedAccessoryBeatsBluetooth",
+        "UARPSupportedAccessoryA3454"
       ]
     },
     {
@@ -100,12 +106,13 @@
       "productID": 8216,
       "display": "AirPods Pro 2 (USB-C Case)",
       "family": "case",
+      "tier": "extended",
       "baseClasses": [
+        "UARPSupportedAccessoryAirPodsCase",
         "UARPSupportedAccessoryA3122",
         "UARPSupportedAccessoryA3059",
         "UARPSupportedAccessoryA2968",
-        "UARPSupportedAccessoryA2617",
-        "UARPSupportedAccessoryAirPodsCase"
+        "UARPSupportedAccessoryA2617"
       ]
     },
     {
@@ -115,12 +122,13 @@
       "productID": 5022,
       "display": "A2968USB",
       "family": "caseUSB",
+      "tier": "extended",
       "baseClasses": [
+        "UARPSupportedAccessoryAirPodsCaseUSB",
         "UARPSupportedAccessoryA3122USB",
         "UARPSupportedAccessoryA3059USB",
         "UARPSupportedAccessoryA2968USB",
-        "UARPSupportedAccessoryA2617USB",
-        "UARPSupportedAccessoryAirPodsCaseUSB"
+        "UARPSupportedAccessoryA2617USB"
       ]
     },
     {
@@ -130,12 +138,13 @@
       "productID": 8228,
       "display": "AirPods Pro 2 (USB-C)",
       "family": "bud",
+      "tier": "extended",
       "baseClasses": [
+        "UARPSupportedAccessoryAirPodsBud",
         "UARPSupportedAccessoryA3064",
         "UARPSupportedAccessoryA3048",
         "UARPSupportedAccessoryA3053",
-        "UARPSupportedAccessoryA2699",
-        "UARPSupportedAccessoryAirPodsBud"
+        "UARPSupportedAccessoryA2699"
       ],
       "alt": [
         "A3047"
@@ -148,12 +157,13 @@
       "productID": 8217,
       "display": "AirPods 4",
       "family": "bud",
+      "tier": "core",
       "baseClasses": [
+        "UARPSupportedAccessoryAirPodsBud",
         "UARPSupportedAccessoryA3064",
         "UARPSupportedAccessoryA3048",
         "UARPSupportedAccessoryA3053",
-        "UARPSupportedAccessoryA2699",
-        "UARPSupportedAccessoryAirPodsBud"
+        "UARPSupportedAccessoryA2699"
       ],
       "alt": [
         "A3050"
@@ -166,12 +176,13 @@
       "productID": 8222,
       "display": "AirPods 4",
       "family": "bud",
+      "tier": "core",
       "baseClasses": [
+        "UARPSupportedAccessoryAirPodsBud",
         "UARPSupportedAccessoryA3064",
         "UARPSupportedAccessoryA3048",
         "UARPSupportedAccessoryA3053",
-        "UARPSupportedAccessoryA2699",
-        "UARPSupportedAccessoryAirPodsBud"
+        "UARPSupportedAccessoryA2699"
       ]
     },
     {
@@ -181,12 +192,13 @@
       "productID": 8219,
       "display": "AirPods 4 (ANC)",
       "family": "bud",
+      "tier": "core",
       "baseClasses": [
+        "UARPSupportedAccessoryAirPodsBud",
         "UARPSupportedAccessoryA3064",
         "UARPSupportedAccessoryA3048",
         "UARPSupportedAccessoryA3053",
-        "UARPSupportedAccessoryA2699",
-        "UARPSupportedAccessoryAirPodsBud"
+        "UARPSupportedAccessoryA2699"
       ],
       "alt": [
         "A3055"
@@ -199,12 +211,13 @@
       "productID": 8224,
       "display": "AirPods 4 (ANC)",
       "family": "bud",
+      "tier": "core",
       "baseClasses": [
+        "UARPSupportedAccessoryAirPodsBud",
         "UARPSupportedAccessoryA3064",
         "UARPSupportedAccessoryA3048",
         "UARPSupportedAccessoryA3053",
-        "UARPSupportedAccessoryA2699",
-        "UARPSupportedAccessoryAirPodsBud"
+        "UARPSupportedAccessoryA2699"
       ]
     },
     {
@@ -214,12 +227,13 @@
       "productID": 5023,
       "display": "AirPods 4 (Charging Case)",
       "family": "caseUSB",
+      "tier": "core",
       "baseClasses": [
+        "UARPSupportedAccessoryAirPodsCaseUSB",
         "UARPSupportedAccessoryA3122USB",
         "UARPSupportedAccessoryA3059USB",
         "UARPSupportedAccessoryA2968USB",
-        "UARPSupportedAccessoryA2617USB",
-        "UARPSupportedAccessoryAirPodsCaseUSB"
+        "UARPSupportedAccessoryA2617USB"
       ]
     },
     {
@@ -229,12 +243,13 @@
       "productID": 8220,
       "display": "AirPods 4 (Wireless Charging Case)",
       "family": "case",
+      "tier": "core",
       "baseClasses": [
+        "UARPSupportedAccessoryAirPodsCase",
         "UARPSupportedAccessoryA3122",
         "UARPSupportedAccessoryA3059",
         "UARPSupportedAccessoryA2968",
-        "UARPSupportedAccessoryA2617",
-        "UARPSupportedAccessoryAirPodsCase"
+        "UARPSupportedAccessoryA2617"
       ]
     },
     {
@@ -244,12 +259,13 @@
       "productID": 5024,
       "display": "A3059USB",
       "family": "caseUSB",
+      "tier": "core",
       "baseClasses": [
+        "UARPSupportedAccessoryAirPodsCaseUSB",
         "UARPSupportedAccessoryA3122USB",
         "UARPSupportedAccessoryA3059USB",
         "UARPSupportedAccessoryA2968USB",
-        "UARPSupportedAccessoryA2617USB",
-        "UARPSupportedAccessoryAirPodsCaseUSB"
+        "UARPSupportedAccessoryA2617USB"
       ]
     },
     {
@@ -259,12 +275,13 @@
       "productID": 8231,
       "display": "AirPods Pro 3",
       "family": "bud",
+      "tier": "core",
       "baseClasses": [
+        "UARPSupportedAccessoryAirPodsBud",
         "UARPSupportedAccessoryA3064",
         "UARPSupportedAccessoryA3048",
         "UARPSupportedAccessoryA3053",
-        "UARPSupportedAccessoryA2699",
-        "UARPSupportedAccessoryAirPodsBud"
+        "UARPSupportedAccessoryA2699"
       ],
       "alt": [
         "A3063"
@@ -277,12 +294,13 @@
       "productID": 8232,
       "display": "AirPods Pro 3",
       "family": "bud",
+      "tier": "core",
       "baseClasses": [
+        "UARPSupportedAccessoryAirPodsBud",
         "UARPSupportedAccessoryA3064",
         "UARPSupportedAccessoryA3048",
         "UARPSupportedAccessoryA3053",
-        "UARPSupportedAccessoryA2699",
-        "UARPSupportedAccessoryAirPodsBud"
+        "UARPSupportedAccessoryA2699"
       ]
     },
     {
@@ -292,12 +310,13 @@
       "productID": 8233,
       "display": "AirPods Pro 3 (MagSafe Charging Case)",
       "family": "case",
+      "tier": "core",
       "baseClasses": [
+        "UARPSupportedAccessoryAirPodsCase",
         "UARPSupportedAccessoryA3122",
         "UARPSupportedAccessoryA3059",
         "UARPSupportedAccessoryA2968",
-        "UARPSupportedAccessoryA2617",
-        "UARPSupportedAccessoryAirPodsCase"
+        "UARPSupportedAccessoryA2617"
       ]
     },
     {
@@ -307,12 +326,13 @@
       "productID": 5025,
       "display": "A3122USB",
       "family": "caseUSB",
+      "tier": "core",
       "baseClasses": [
+        "UARPSupportedAccessoryAirPodsCaseUSB",
         "UARPSupportedAccessoryA3122USB",
         "UARPSupportedAccessoryA3059USB",
         "UARPSupportedAccessoryA2968USB",
-        "UARPSupportedAccessoryA2617USB",
-        "UARPSupportedAccessoryAirPodsCaseUSB"
+        "UARPSupportedAccessoryA2617USB"
       ]
     },
     {
@@ -322,9 +342,10 @@
       "productID": 8229,
       "display": "A3140",
       "family": "max",
+      "tier": "extended",
       "baseClasses": [
-        "UARPSupportedAccessoryA3454",
-        "UARPSupportedAccessoryBeatsBluetooth"
+        "UARPSupportedAccessoryBeatsBluetooth",
+        "UARPSupportedAccessoryA3454"
       ]
     },
     {
@@ -334,9 +355,10 @@
       "productID": 8230,
       "display": "A3150",
       "family": "max",
+      "tier": "extended",
       "baseClasses": [
-        "UARPSupportedAccessoryA3454",
-        "UARPSupportedAccessoryBeatsBluetooth"
+        "UARPSupportedAccessoryBeatsBluetooth",
+        "UARPSupportedAccessoryA3454"
       ],
       "alt": [
         "A3151"
@@ -349,9 +371,10 @@
       "productID": 8221,
       "display": "A3157",
       "family": "max",
+      "tier": "extended",
       "baseClasses": [
-        "UARPSupportedAccessoryA3454",
-        "UARPSupportedAccessoryBeatsBluetooth"
+        "UARPSupportedAccessoryBeatsBluetooth",
+        "UARPSupportedAccessoryA3454"
       ],
       "alt": [
         "A3158"
@@ -364,9 +387,10 @@
       "productID": 8218,
       "display": "A3211",
       "family": "max",
+      "tier": "extended",
       "baseClasses": [
-        "UARPSupportedAccessoryA3454",
-        "UARPSupportedAccessoryBeatsBluetooth"
+        "UARPSupportedAccessoryBeatsBluetooth",
+        "UARPSupportedAccessoryA3454"
       ]
     },
     {
@@ -376,12 +400,13 @@
       "productID": 8240,
       "display": "AirPods 5 (Wireless Charging)",
       "family": "bud",
+      "tier": "core",
       "baseClasses": [
+        "UARPSupportedAccessoryAirPodsBud",
         "UARPSupportedAccessoryA3064",
         "UARPSupportedAccessoryA3048",
         "UARPSupportedAccessoryA3053",
-        "UARPSupportedAccessoryA2699",
-        "UARPSupportedAccessoryAirPodsBud"
+        "UARPSupportedAccessoryA2699"
       ],
       "alt": [
         "A3439"
@@ -394,12 +419,13 @@
       "productID": 8242,
       "display": "AirPods 5 (Wireless Charging)",
       "family": "bud",
+      "tier": "core",
       "baseClasses": [
+        "UARPSupportedAccessoryAirPodsBud",
         "UARPSupportedAccessoryA3064",
         "UARPSupportedAccessoryA3048",
         "UARPSupportedAccessoryA3053",
-        "UARPSupportedAccessoryA2699",
-        "UARPSupportedAccessoryAirPodsBud"
+        "UARPSupportedAccessoryA2699"
       ]
     },
     {
@@ -409,9 +435,10 @@
       "productID": 8237,
       "display": "AirPods Max 2",
       "family": "max",
+      "tier": "core",
       "baseClasses": [
-        "UARPSupportedAccessoryA3454",
-        "UARPSupportedAccessoryBeatsBluetooth"
+        "UARPSupportedAccessoryBeatsBluetooth",
+        "UARPSupportedAccessoryA3454"
       ]
     },
     {
@@ -421,12 +448,13 @@
       "productID": 8245,
       "display": "AirPods 5 (Charging Case)",
       "family": "case",
+      "tier": "core",
       "baseClasses": [
+        "UARPSupportedAccessoryAirPodsCase",
         "UARPSupportedAccessoryA3122",
         "UARPSupportedAccessoryA3059",
         "UARPSupportedAccessoryA2968",
-        "UARPSupportedAccessoryA2617",
-        "UARPSupportedAccessoryAirPodsCase"
+        "UARPSupportedAccessoryA2617"
       ]
     },
     {
@@ -436,12 +464,13 @@
       "productID": 5029,
       "display": "AirPods 5 (Charging Case)",
       "family": "caseUSB",
+      "tier": "core",
       "baseClasses": [
+        "UARPSupportedAccessoryAirPodsCaseUSB",
         "UARPSupportedAccessoryA3122USB",
         "UARPSupportedAccessoryA3059USB",
         "UARPSupportedAccessoryA2968USB",
-        "UARPSupportedAccessoryA2617USB",
-        "UARPSupportedAccessoryAirPodsCaseUSB"
+        "UARPSupportedAccessoryA2617USB"
       ]
     },
     {
@@ -451,12 +480,13 @@
       "productID": 5028,
       "display": "AirPods 5 (Wireless Charging Case)",
       "family": "caseUSB",
+      "tier": "core",
       "baseClasses": [
+        "UARPSupportedAccessoryAirPodsCaseUSB",
         "UARPSupportedAccessoryA3122USB",
         "UARPSupportedAccessoryA3059USB",
         "UARPSupportedAccessoryA2968USB",
-        "UARPSupportedAccessoryA2617USB",
-        "UARPSupportedAccessoryAirPodsCaseUSB"
+        "UARPSupportedAccessoryA2617USB"
       ]
     },
     {
@@ -466,12 +496,13 @@
       "productID": 8246,
       "display": "AirPods 5",
       "family": "bud",
+      "tier": "core",
       "baseClasses": [
+        "UARPSupportedAccessoryAirPodsBud",
         "UARPSupportedAccessoryA3064",
         "UARPSupportedAccessoryA3048",
         "UARPSupportedAccessoryA3053",
-        "UARPSupportedAccessoryA2699",
-        "UARPSupportedAccessoryAirPodsBud"
+        "UARPSupportedAccessoryA2699"
       ],
       "alt": [
         "A3531"
@@ -484,12 +515,13 @@
       "productID": 8247,
       "display": "AirPods 5",
       "family": "bud",
+      "tier": "core",
       "baseClasses": [
+        "UARPSupportedAccessoryAirPodsBud",
         "UARPSupportedAccessoryA3064",
         "UARPSupportedAccessoryA3048",
         "UARPSupportedAccessoryA3053",
-        "UARPSupportedAccessoryA2699",
-        "UARPSupportedAccessoryAirPodsBud"
+        "UARPSupportedAccessoryA2699"
       ]
     },
     {
@@ -499,9 +531,10 @@
       "productID": 8248,
       "display": "A3577",
       "family": "max",
+      "tier": "extended",
       "baseClasses": [
-        "UARPSupportedAccessoryA3454",
-        "UARPSupportedAccessoryBeatsBluetooth"
+        "UARPSupportedAccessoryBeatsBluetooth",
+        "UARPSupportedAccessoryA3454"
       ]
     }
   ],

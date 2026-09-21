@@ -29,6 +29,14 @@
 > 找不到时自动从 `UARPSupportedAccessoryAirPodsBud/Case/CaseUSB` 的具体子类里挑一个。
 > `HeadphoneManager` 仅新系统有，老系统走 UARP + CoreBluetooth 名称链路。
 
+## 安全模型（v0.3）
+
+- 默认只注册**本机缺失的新代型号**（`tier=core`，19 个：AirPods 4/5、Pro 3、Max 2 及对应盒子）
+- **抽象基类优先**（`…AirPodsBud/Case/CaseUSB`），具体型号类只作 fallback，避免继承别的型号能力
+- UARP 注册只在 `bluetoothd / uarpd / bluetoothuserd / bluetoothaudiod` 内执行，UI 进程只做名称显示
+- **崩溃守护**：注册前写标记，完成后清除；若标记残留（上次启动异常），本次自动跳过注册
+- App 可切换：总开关 / UARP 注册 / 仅新代 vs 全部型号（含 Beats、老型号）
+
 ## 全型号支持
 
 型号表由 `tools/extract_airpods_models.py` 从 iOS 27 CoreUARP 自动提取

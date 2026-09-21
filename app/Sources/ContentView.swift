@@ -8,24 +8,39 @@ struct ModelInfo: Identifiable {
 
 struct ContentView: View {
     @State private var enabled: Bool = (Prefs.load()["Enabled"] as? Bool) ?? true
+    @State private var uarpEnabled: Bool = (Prefs.load()["UARPEnabled"] as? Bool) ?? true
+    @State private var scopeAll: Bool = (Prefs.load()["Scope"] as? String) == "all"
     @State private var status: String = ""
 
     private let models: [ModelInfo] = [
-        ModelInfo(title: "AirPods 5", detail: "A3531 / A3532 / A3533 · case A3529"),
-        ModelInfo(title: "AirPods 5 (Wireless Charging)", detail: "A3439 / A3440 / A3441 · case A3530"),
+        ModelInfo(title: "AirPods 5", detail: "A3531 / A3532 / A3533 · case A3529 / A3530"),
+        ModelInfo(title: "AirPods Pro 3", detail: "A3063 / A3064 / A3065 · case A3122"),
+        ModelInfo(title: "AirPods 4 / 4 (ANC)", detail: "A3050…A3057 · cases A3058 / A3059"),
+        ModelInfo(title: "AirPods Max 2", detail: "A3454"),
     ]
 
     var body: some View {
         NavigationView {
             List {
-                Section {
+                Section(header: Text("开关")) {
                     Toggle("启用移植", isOn: $enabled)
-                        .onChange(of: enabled) { newValue in
-                            save(enabled: newValue)
-                        }
+                        .onChange(of: enabled) { _ in save() }
+                    Toggle("UARP 配件注册", isOn: $uarpEnabled)
+                        .onChange(of: uarpEnabled) { _ in save() }
                 }
 
-                Section(header: Text("支持的型号")) {
+                Section(header: Text("注册范围"), footer: Text("默认只注册本机缺失的新代型号（更安全）。全部型号包含 Beats/老型号。")) {
+                    Toggle("仅新代型号（推荐）", isOn: Binding(
+                        get: { !scopeAll },
+                        set: { scopeAll = !$0; save() }
+                    ))
+                    Toggle("包含全部型号", isOn: Binding(
+                        get: { scopeAll },
+                        set: { scopeAll = $0; save() }
+                    ))
+                }
+
+                Section(header: Text("覆盖的型号")) {
                     ForEach(models) { model in
                         VStack(alignment: .leading, spacing: 4) {
                             Text(model.title).font(.headline)
@@ -49,9 +64,9 @@ struct ContentView: View {
                 }
 
                 Section(header: Text("关于")) {
-                    Text("需要 rootless 越狱（Dopamine / roothide）。")
+                    Text("需要 rootless / rootful 越狱；配置写入：")
                         .font(.footnote)
-                    Text("配置写入：\(Prefs.path)")
+                    Text(Prefs.path)
                         .font(.caption2)
                         .foregroundColor(.secondary)
                 }
@@ -62,12 +77,14 @@ struct ContentView: View {
         .navigationViewStyle(.stack)
     }
 
-    private func save(enabled: Bool) {
+    private func save() {
         var prefs = Prefs.load()
         prefs["Enabled"] = enabled
+        prefs["UARPEnabled"] = uarpEnabled
+        prefs["Scope"] = scopeAll ? "all" : "core"
         do {
             try Prefs.save(prefs)
-            status = "已保存，重启 bluetoothd 后生效"
+            status = "已保存，重启 bluetoothd / 用户空间后生效"
         } catch {
             status = "保存失败：\(error.localizedDescription)"
         }
@@ -76,8 +93,10 @@ struct ContentView: View {
     private func describeState() -> String {
         let prefs = Prefs.load()
         let enabled = (prefs["Enabled"] as? Bool) ?? true
+        let uarp = (prefs["UARPEnabled"] as? Bool) ?? true
+        let scope = (prefs["Scope"] as? String) ?? "core"
         let reachable = FileManager.default.fileExists(atPath: Prefs.directory)
-        return "enabled=\(enabled) · prefsDir=\(reachable ? "OK" : "不可写")"
+        return "enabled=\(enabled) uarp=\(uarp) scope=\(scope) · prefsDir=\(reachable ? "OK" : "不可写")"
     }
 }
 

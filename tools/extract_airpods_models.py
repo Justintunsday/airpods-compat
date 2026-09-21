@@ -72,31 +72,43 @@ KB_MODELS = {
 }
 
 BASE_CLASS_HINTS = {
+    # abstract bases first (safer: don't inherit a sibling model's concrete
+    # capabilities); concrete classes follow as fallbacks in case the abstract
+    # -init is not usable.
     "bud": [
+        "UARPSupportedAccessoryAirPodsBud",
         "UARPSupportedAccessoryA3064",
         "UARPSupportedAccessoryA3048",
         "UARPSupportedAccessoryA3053",
         "UARPSupportedAccessoryA2699",
-        "UARPSupportedAccessoryAirPodsBud",
     ],
     "case": [
+        "UARPSupportedAccessoryAirPodsCase",
         "UARPSupportedAccessoryA3122",
         "UARPSupportedAccessoryA3059",
         "UARPSupportedAccessoryA2968",
         "UARPSupportedAccessoryA2617",
-        "UARPSupportedAccessoryAirPodsCase",
     ],
     "caseUSB": [
+        "UARPSupportedAccessoryAirPodsCaseUSB",
         "UARPSupportedAccessoryA3122USB",
         "UARPSupportedAccessoryA3059USB",
         "UARPSupportedAccessoryA2968USB",
         "UARPSupportedAccessoryA2617USB",
-        "UARPSupportedAccessoryAirPodsCaseUSB",
     ],
     "max": [
-        "UARPSupportedAccessoryA3454",
         "UARPSupportedAccessoryBeatsBluetooth",
+        "UARPSupportedAccessoryA3454",
     ],
+}
+
+# default registration scope: only recent generations that older iOS lacks.
+# everything else stays available with Scope=all.
+CORE_MODELS = {
+    "A3053", "A3054", "A3056", "A3057", "A3058USB", "A3059", "A3059USB",  # AirPods 4
+    "A3064", "A3065", "A3122", "A3122USB",                                # AirPods Pro 3
+    "A3440", "A3441", "A3529", "A3529USB", "A3530USB", "A3532", "A3533",  # AirPods 5
+    "A3454",                                                              # AirPods Max 2
 }
 
 
@@ -301,6 +313,7 @@ def main():
             "productID": pid,
             "display": display,
             "family": family,
+            "tier": "core" if suffix in CORE_MODELS else "extended",
             "baseClasses": BASE_CLASS_HINTS[family],
         }
         if alt:
@@ -342,6 +355,7 @@ def main():
             lines.append("\t\t\t</array>")
         lines.append(f"\t\t\t<key>productID</key><integer>{entry['productID']}</integer>")
         lines.append(f"\t\t\t<key>displayName</key><string>{plist_escape(entry['display'])}</string>")
+        lines.append(f"\t\t\t<key>tier</key><string>{entry['tier']}</string>")
         lines.append("\t\t\t<key>baseClasses</key><array>")
         for base in entry["baseClasses"]:
             lines.append(f"\t\t\t\t<string>{plist_escape(base)}</string>")

@@ -14,9 +14,10 @@
 			</array>
 			<key>productID</key><integer>8209</integer>
 			<key>displayName</key><string>A2513</string>
+			<key>tier</key><string>extended</string>
 			<key>baseClasses</key><array>
-				<string>UARPSupportedAccessoryA3454</string>
 				<string>UARPSupportedAccessoryBeatsBluetooth</string>
+				<string>UARPSupportedAccessoryA3454</string>
 			</array>
 		</dict>
 		<dict>
@@ -27,12 +28,13 @@
 			</array>
 			<key>productID</key><integer>8213</integer>
 			<key>displayName</key><string>AirPods Pro 2 (Charging Case)</string>
+			<key>tier</key><string>extended</string>
 			<key>baseClasses</key><array>
+				<string>UARPSupportedAccessoryAirPodsCase</string>
 				<string>UARPSupportedAccessoryA3122</string>
 				<string>UARPSupportedAccessoryA3059</string>
 				<string>UARPSupportedAccessoryA2968</string>
 				<string>UARPSupportedAccessoryA2617</string>
-				<string>UARPSupportedAccessoryAirPodsCase</string>
 			</array>
 		</dict>
 		<dict>
@@ -40,12 +42,13 @@
 			<key>appleModelNumber</key><string>A2617USB</string>
 			<key>productID</key><integer>4373</integer>
 			<key>displayName</key><string>A2617USB</string>
+			<key>tier</key><string>extended</string>
 			<key>baseClasses</key><array>
+				<string>UARPSupportedAccessoryAirPodsCaseUSB</string>
 				<string>UARPSupportedAccessoryA3122USB</string>
 				<string>UARPSupportedAccessoryA3059USB</string>
 				<string>UARPSupportedAccessoryA2968USB</string>
 				<string>UARPSupportedAccessoryA2617USB</string>
-				<string>UARPSupportedAccessoryAirPodsCaseUSB</string>
 			</array>
 		</dict>
 		<dict>
@@ -56,12 +59,13 @@
 			</array>
 			<key>productID</key><integer>8212</integer>
 			<key>displayName</key><string>AirPods Pro 2</string>
+			<key>tier</key><string>extended</string>
 			<key>baseClasses</key><array>
+				<string>UARPSupportedAccessoryAirPodsBud</string>
 				<string>UARPSupportedAccessoryA3064</string>
 				<string>UARPSupportedAccessoryA3048</string>
 				<string>UARPSupportedAccessoryA3053</string>
 				<string>UARPSupportedAccessoryA2699</string>
-				<string>UARPSupportedAccessoryAirPodsBud</string>
 			</array>
 		</dict>
 		<dict>
@@ -72,9 +76,10 @@
 			</array>
 			<key>productID</key><integer>8214</integer>
 			<key>displayName</key><string>A2871</string>
+			<key>tier</key><string>extended</string>
 			<key>baseClasses</key><array>
-				<string>UARPSupportedAccessoryA3454</string>
 				<string>UARPSupportedAccessoryBeatsBluetooth</string>
+				<string>UARPSupportedAccessoryA3454</string>
 			</array>
 		</dict>
 		<dict>
@@ -82,9 +87,10 @@
 			<key>appleModelNumber</key><string>A2924</string>
 			<key>productID</key><integer>8215</integer>
 			<key>displayName</key><string>A2924</string>
+			<key>tier</key><string>extended</string>
 			<key>baseClasses</key><array>
-				<string>UARPSupportedAccessoryA3454</string>
 				<string>UARPSupportedAccessoryBeatsBluetooth</string>
+				<string>UARPSupportedAccessoryA3454</string>
 			</array>
 		</dict>
 		<dict>
@@ -92,12 +98,13 @@
 			<key>appleModelNumber</key><string>A2968</string>
 			<key>productID</key><integer>8216</integer>
 			<key>displayName</key><string>AirPods Pro 2 (USB-C Case)</string>
+			<key>tier</key><string>extended</string>
 			<key>baseClasses</key><array>
+				<string>UARPSupportedAccessoryAirPodsCase</string>
 				<string>UARPSupportedAccessoryA3122</string>
 				<string>UARPSupportedAccessoryA3059</string>
 				<string>UARPSupportedAccessoryA2968</string>
 				<string>UARPSupportedAccessoryA2617</string>
-				<string>UARPSupportedAccessoryAirPodsCase</string>
 			</array>
 		</dict>
 		<dict>
@@ -105,12 +112,13 @@
 			<key>appleModelNumber</key><string>A2968USB</string>
 			<key>productID</key><integer>5022</integer>
 			<key>displayName</key><string>A2968USB</string>
+			<key>tier</key><string>extended</string>
 			<key>baseClasses</key><array>
+				<string>UARPSupportedAccessoryAirPodsCaseUSB</string>
 				<string>UARPSupportedAccessoryA3122USB</string>
 				<string>UARPSupportedAccessoryA3059USB</string>
 				<string>UARPSupportedAccessoryA2968USB</string>
 				<string>UARPSupportedAccessoryA2617USB</string>
-				<string>UARPSupportedAccessoryAirPodsCaseUSB</string>
 			</array>
 		</dict>
 		<dict>
@@ -121,12 +129,13 @@
 			</array>
 			<key>productID</key><integer>8228</integer>
 			<key>displayName</key><string>AirPods Pro 2 (USB-C)</string>
+			<key>tier</key><string>extended</string>
 			<key>baseClasses</key><array>
+				<string>UARPSupportedAccessoryAirPodsBud</string>
 				<string>UARPSupportedAccessoryA3064</string>
 				<string>UARPSupportedAccessoryA3048</string>
 				<string>UARPSupportedAccessoryA3053</string>
 				<string>UARPSupportedAccessoryA2699</string>
-				<string>UARPSupportedAccessoryAirPodsBud</string>
 			</array>
 		</dict>
 		<dict>
@@ -137,12 +146,13 @@
 			</array>
 			<key>productID</key><integer>8217</integer>
 			<key>displayName</key><string>AirPods 4</string>
+			<key>tier</key><string>core</string>
 			<key>baseClasses</key><array>
+				<string>UARPSupportedAccessoryAirPodsBud</string>
 				<string>UARPSupportedAccessoryA3064</string>
 				<string>UARPSupportedAccessoryA3048</string>
 				<string>UARPSupportedAccessoryA3053</string>
 				<string>UARPSupportedAccessoryA2699</string>
-				<string>UARPSupportedAccessoryAirPodsBud</string>
 			</array>
 		</dict>
 		<dict>
@@ -150,12 +160,13 @@
 			<key>appleModelNumber</key><string>A3054</string>
 			<key>productID</key><integer>8222</integer>
 			<key>displayName</key><string>AirPods 4</string>
+			<key>tier</key><string>core</string>
 			<key>baseClasses</key><array>
+				<string>UARPSupportedAccessoryAirPodsBud</string>
 				<string>UARPSupportedAccessoryA3064</string>
 				<string>UARPSupportedAccessoryA3048</string>
 				<string>UARPSupportedAccessoryA3053</string>
 				<string>UARPSupportedAccessoryA2699</string>
-				<string>UARPSupportedAccessoryAirPodsBud</string>
 			</array>
 		</dict>
 		<dict>
@@ -166,12 +177,13 @@
 			</array>
 			<key>productID</key><integer>8219</integer>
 			<key>displayName</key><string>AirPods 4 (ANC)</string>
+			<key>tier</key><string>core</string>
 			<key>baseClasses</key><array>
+				<string>UARPSupportedAccessoryAirPodsBud</string>
 				<string>UARPSupportedAccessoryA3064</string>
 				<string>UARPSupportedAccessoryA3048</string>
 				<string>UARPSupportedAccessoryA3053</string>
 				<string>UARPSupportedAccessoryA2699</string>
-				<string>UARPSupportedAccessoryAirPodsBud</string>
 			</array>
 		</dict>
 		<dict>
@@ -179,12 +191,13 @@
 			<key>appleModelNumber</key><string>A3057</string>
 			<key>productID</key><integer>8224</integer>
 			<key>displayName</key><string>AirPods 4 (ANC)</string>
+			<key>tier</key><string>core</string>
 			<key>baseClasses</key><array>
+				<string>UARPSupportedAccessoryAirPodsBud</string>
 				<string>UARPSupportedAccessoryA3064</string>
 				<string>UARPSupportedAccessoryA3048</string>
 				<string>UARPSupportedAccessoryA3053</string>
 				<string>UARPSupportedAccessoryA2699</string>
-				<string>UARPSupportedAccessoryAirPodsBud</string>
 			</array>
 		</dict>
 		<dict>
@@ -192,12 +205,13 @@
 			<key>appleModelNumber</key><string>A3058</string>
 			<key>productID</key><integer>5023</integer>
 			<key>displayName</key><string>AirPods 4 (Charging Case)</string>
+			<key>tier</key><string>core</string>
 			<key>baseClasses</key><array>
+				<string>UARPSupportedAccessoryAirPodsCaseUSB</string>
 				<string>UARPSupportedAccessoryA3122USB</string>
 				<string>UARPSupportedAccessoryA3059USB</string>
 				<string>UARPSupportedAccessoryA2968USB</string>
 				<string>UARPSupportedAccessoryA2617USB</string>
-				<string>UARPSupportedAccessoryAirPodsCaseUSB</string>
 			</array>
 		</dict>
 		<dict>
@@ -205,12 +219,13 @@
 			<key>appleModelNumber</key><string>A3059</string>
 			<key>productID</key><integer>8220</integer>
 			<key>displayName</key><string>AirPods 4 (Wireless Charging Case)</string>
+			<key>tier</key><string>core</string>
 			<key>baseClasses</key><array>
+				<string>UARPSupportedAccessoryAirPodsCase</string>
 				<string>UARPSupportedAccessoryA3122</string>
 				<string>UARPSupportedAccessoryA3059</string>
 				<string>UARPSupportedAccessoryA2968</string>
 				<string>UARPSupportedAccessoryA2617</string>
-				<string>UARPSupportedAccessoryAirPodsCase</string>
 			</array>
 		</dict>
 		<dict>
@@ -218,12 +233,13 @@
 			<key>appleModelNumber</key><string>A3059USB</string>
 			<key>productID</key><integer>5024</integer>
 			<key>displayName</key><string>A3059USB</string>
+			<key>tier</key><string>core</string>
 			<key>baseClasses</key><array>
+				<string>UARPSupportedAccessoryAirPodsCaseUSB</string>
 				<string>UARPSupportedAccessoryA3122USB</string>
 				<string>UARPSupportedAccessoryA3059USB</string>
 				<string>UARPSupportedAccessoryA2968USB</string>
 				<string>UARPSupportedAccessoryA2617USB</string>
-				<string>UARPSupportedAccessoryAirPodsCaseUSB</string>
 			</array>
 		</dict>
 		<dict>
@@ -234,12 +250,13 @@
 			</array>
 			<key>productID</key><integer>8231</integer>
 			<key>displayName</key><string>AirPods Pro 3</string>
+			<key>tier</key><string>core</string>
 			<key>baseClasses</key><array>
+				<string>UARPSupportedAccessoryAirPodsBud</string>
 				<string>UARPSupportedAccessoryA3064</string>
 				<string>UARPSupportedAccessoryA3048</string>
 				<string>UARPSupportedAccessoryA3053</string>
 				<string>UARPSupportedAccessoryA2699</string>
-				<string>UARPSupportedAccessoryAirPodsBud</string>
 			</array>
 		</dict>
 		<dict>
@@ -247,12 +264,13 @@
 			<key>appleModelNumber</key><string>A3065</string>
 			<key>productID</key><integer>8232</integer>
 			<key>displayName</key><string>AirPods Pro 3</string>
+			<key>tier</key><string>core</string>
 			<key>baseClasses</key><array>
+				<string>UARPSupportedAccessoryAirPodsBud</string>
 				<string>UARPSupportedAccessoryA3064</string>
 				<string>UARPSupportedAccessoryA3048</string>
 				<string>UARPSupportedAccessoryA3053</string>
 				<string>UARPSupportedAccessoryA2699</string>
-				<string>UARPSupportedAccessoryAirPodsBud</string>
 			</array>
 		</dict>
 		<dict>
@@ -260,12 +278,13 @@
 			<key>appleModelNumber</key><string>A3122</string>
 			<key>productID</key><integer>8233</integer>
 			<key>displayName</key><string>AirPods Pro 3 (MagSafe Charging Case)</string>
+			<key>tier</key><string>core</string>
 			<key>baseClasses</key><array>
+				<string>UARPSupportedAccessoryAirPodsCase</string>
 				<string>UARPSupportedAccessoryA3122</string>
 				<string>UARPSupportedAccessoryA3059</string>
 				<string>UARPSupportedAccessoryA2968</string>
 				<string>UARPSupportedAccessoryA2617</string>
-				<string>UARPSupportedAccessoryAirPodsCase</string>
 			</array>
 		</dict>
 		<dict>
@@ -273,12 +292,13 @@
 			<key>appleModelNumber</key><string>A3122USB</string>
 			<key>productID</key><integer>5025</integer>
 			<key>displayName</key><string>A3122USB</string>
+			<key>tier</key><string>core</string>
 			<key>baseClasses</key><array>
+				<string>UARPSupportedAccessoryAirPodsCaseUSB</string>
 				<string>UARPSupportedAccessoryA3122USB</string>
 				<string>UARPSupportedAccessoryA3059USB</string>
 				<string>UARPSupportedAccessoryA2968USB</string>
 				<string>UARPSupportedAccessoryA2617USB</string>
-				<string>UARPSupportedAccessoryAirPodsCaseUSB</string>
 			</array>
 		</dict>
 		<dict>
@@ -286,9 +306,10 @@
 			<key>appleModelNumber</key><string>A3140</string>
 			<key>productID</key><integer>8229</integer>
 			<key>displayName</key><string>A3140</string>
+			<key>tier</key><string>extended</string>
 			<key>baseClasses</key><array>
-				<string>UARPSupportedAccessoryA3454</string>
 				<string>UARPSupportedAccessoryBeatsBluetooth</string>
+				<string>UARPSupportedAccessoryA3454</string>
 			</array>
 		</dict>
 		<dict>
@@ -299,9 +320,10 @@
 			</array>
 			<key>productID</key><integer>8230</integer>
 			<key>displayName</key><string>A3150</string>
+			<key>tier</key><string>extended</string>
 			<key>baseClasses</key><array>
-				<string>UARPSupportedAccessoryA3454</string>
 				<string>UARPSupportedAccessoryBeatsBluetooth</string>
+				<string>UARPSupportedAccessoryA3454</string>
 			</array>
 		</dict>
 		<dict>
@@ -312,9 +334,10 @@
 			</array>
 			<key>productID</key><integer>8221</integer>
 			<key>displayName</key><string>A3157</string>
+			<key>tier</key><string>extended</string>
 			<key>baseClasses</key><array>
-				<string>UARPSupportedAccessoryA3454</string>
 				<string>UARPSupportedAccessoryBeatsBluetooth</string>
+				<string>UARPSupportedAccessoryA3454</string>
 			</array>
 		</dict>
 		<dict>
@@ -322,9 +345,10 @@
 			<key>appleModelNumber</key><string>A3211</string>
 			<key>productID</key><integer>8218</integer>
 			<key>displayName</key><string>A3211</string>
+			<key>tier</key><string>extended</string>
 			<key>baseClasses</key><array>
-				<string>UARPSupportedAccessoryA3454</string>
 				<string>UARPSupportedAccessoryBeatsBluetooth</string>
+				<string>UARPSupportedAccessoryA3454</string>
 			</array>
 		</dict>
 		<dict>
@@ -335,12 +359,13 @@
 			</array>
 			<key>productID</key><integer>8240</integer>
 			<key>displayName</key><string>AirPods 5 (Wireless Charging)</string>
+			<key>tier</key><string>core</string>
 			<key>baseClasses</key><array>
+				<string>UARPSupportedAccessoryAirPodsBud</string>
 				<string>UARPSupportedAccessoryA3064</string>
 				<string>UARPSupportedAccessoryA3048</string>
 				<string>UARPSupportedAccessoryA3053</string>
 				<string>UARPSupportedAccessoryA2699</string>
-				<string>UARPSupportedAccessoryAirPodsBud</string>
 			</array>
 		</dict>
 		<dict>
@@ -348,12 +373,13 @@
 			<key>appleModelNumber</key><string>A3441</string>
 			<key>productID</key><integer>8242</integer>
 			<key>displayName</key><string>AirPods 5 (Wireless Charging)</string>
+			<key>tier</key><string>core</string>
 			<key>baseClasses</key><array>
+				<string>UARPSupportedAccessoryAirPodsBud</string>
 				<string>UARPSupportedAccessoryA3064</string>
 				<string>UARPSupportedAccessoryA3048</string>
 				<string>UARPSupportedAccessoryA3053</string>
 				<string>UARPSupportedAccessoryA2699</string>
-				<string>UARPSupportedAccessoryAirPodsBud</string>
 			</array>
 		</dict>
 		<dict>
@@ -361,9 +387,10 @@
 			<key>appleModelNumber</key><string>A3454</string>
 			<key>productID</key><integer>8237</integer>
 			<key>displayName</key><string>AirPods Max 2</string>
+			<key>tier</key><string>core</string>
 			<key>baseClasses</key><array>
-				<string>UARPSupportedAccessoryA3454</string>
 				<string>UARPSupportedAccessoryBeatsBluetooth</string>
+				<string>UARPSupportedAccessoryA3454</string>
 			</array>
 		</dict>
 		<dict>
@@ -371,12 +398,13 @@
 			<key>appleModelNumber</key><string>A3529</string>
 			<key>productID</key><integer>8245</integer>
 			<key>displayName</key><string>AirPods 5 (Charging Case)</string>
+			<key>tier</key><string>core</string>
 			<key>baseClasses</key><array>
+				<string>UARPSupportedAccessoryAirPodsCase</string>
 				<string>UARPSupportedAccessoryA3122</string>
 				<string>UARPSupportedAccessoryA3059</string>
 				<string>UARPSupportedAccessoryA2968</string>
 				<string>UARPSupportedAccessoryA2617</string>
-				<string>UARPSupportedAccessoryAirPodsCase</string>
 			</array>
 		</dict>
 		<dict>
@@ -384,12 +412,13 @@
 			<key>appleModelNumber</key><string>A3529</string>
 			<key>productID</key><integer>5029</integer>
 			<key>displayName</key><string>AirPods 5 (Charging Case)</string>
+			<key>tier</key><string>core</string>
 			<key>baseClasses</key><array>
+				<string>UARPSupportedAccessoryAirPodsCaseUSB</string>
 				<string>UARPSupportedAccessoryA3122USB</string>
 				<string>UARPSupportedAccessoryA3059USB</string>
 				<string>UARPSupportedAccessoryA2968USB</string>
 				<string>UARPSupportedAccessoryA2617USB</string>
-				<string>UARPSupportedAccessoryAirPodsCaseUSB</string>
 			</array>
 		</dict>
 		<dict>
@@ -397,12 +426,13 @@
 			<key>appleModelNumber</key><string>A3530</string>
 			<key>productID</key><integer>5028</integer>
 			<key>displayName</key><string>AirPods 5 (Wireless Charging Case)</string>
+			<key>tier</key><string>core</string>
 			<key>baseClasses</key><array>
+				<string>UARPSupportedAccessoryAirPodsCaseUSB</string>
 				<string>UARPSupportedAccessoryA3122USB</string>
 				<string>UARPSupportedAccessoryA3059USB</string>
 				<string>UARPSupportedAccessoryA2968USB</string>
 				<string>UARPSupportedAccessoryA2617USB</string>
-				<string>UARPSupportedAccessoryAirPodsCaseUSB</string>
 			</array>
 		</dict>
 		<dict>
@@ -413,12 +443,13 @@
 			</array>
 			<key>productID</key><integer>8246</integer>
 			<key>displayName</key><string>AirPods 5</string>
+			<key>tier</key><string>core</string>
 			<key>baseClasses</key><array>
+				<string>UARPSupportedAccessoryAirPodsBud</string>
 				<string>UARPSupportedAccessoryA3064</string>
 				<string>UARPSupportedAccessoryA3048</string>
 				<string>UARPSupportedAccessoryA3053</string>
 				<string>UARPSupportedAccessoryA2699</string>
-				<string>UARPSupportedAccessoryAirPodsBud</string>
 			</array>
 		</dict>
 		<dict>
@@ -426,12 +457,13 @@
 			<key>appleModelNumber</key><string>A3533</string>
 			<key>productID</key><integer>8247</integer>
 			<key>displayName</key><string>AirPods 5</string>
+			<key>tier</key><string>core</string>
 			<key>baseClasses</key><array>
+				<string>UARPSupportedAccessoryAirPodsBud</string>
 				<string>UARPSupportedAccessoryA3064</string>
 				<string>UARPSupportedAccessoryA3048</string>
 				<string>UARPSupportedAccessoryA3053</string>
 				<string>UARPSupportedAccessoryA2699</string>
-				<string>UARPSupportedAccessoryAirPodsBud</string>
 			</array>
 		</dict>
 		<dict>
@@ -439,9 +471,10 @@
 			<key>appleModelNumber</key><string>A3577</string>
 			<key>productID</key><integer>8248</integer>
 			<key>displayName</key><string>A3577</string>
+			<key>tier</key><string>extended</string>
 			<key>baseClasses</key><array>
-				<string>UARPSupportedAccessoryA3454</string>
 				<string>UARPSupportedAccessoryBeatsBluetooth</string>
+				<string>UARPSupportedAccessoryA3454</string>
 			</array>
 		</dict>
 	</array>

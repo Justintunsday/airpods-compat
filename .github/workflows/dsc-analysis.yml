@@ -6,7 +6,7 @@ on:
       versions:
         description: 'JSON array of iOS versions to analyze'
         required: true
-        default: '["27.0","26.6.2"]'
+        default: '["18.6.2","26.6.2","27.0"]'
       build:
         description: "Optional build override (e.g. 24A437) - only when a single version is passed"
         required: false
@@ -24,7 +24,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        version: ${{ fromJSON(inputs.versions || '["27.0","26.6.2"]') }}
+        version: ${{ fromJSON(inputs.versions || '["18.6.2","26.6.2","27.0"]') }}
     permissions:
       contents: read
 

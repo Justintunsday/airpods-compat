@@ -3,7 +3,7 @@
 <plist version="1.0">
 <dict>
 	<key>Version</key>
-	<integer>2</integer>
+	<integer>3</integer>
 	<key>GeneratedFrom</key>
 	<string>iOS 27.0 (24A437) CoreUARP disassembly + Apple KB109525</string>
 	<key>UARP</key>
@@ -22,6 +22,9 @@
 			<key>baseClasses</key>
 			<array>
 				<string>UARPSupportedAccessoryA3064</string>
+				<string>UARPSupportedAccessoryA3048</string>
+				<string>UARPSupportedAccessoryA3053</string>
+				<string>UARPSupportedAccessoryA2699</string>
 				<string>UARPSupportedAccessoryAirPodsBud</string>
 			</array>
 		</dict>
@@ -35,6 +38,9 @@
 			<key>baseClasses</key>
 			<array>
 				<string>UARPSupportedAccessoryA3064</string>
+				<string>UARPSupportedAccessoryA3048</string>
+				<string>UARPSupportedAccessoryA3053</string>
+				<string>UARPSupportedAccessoryA2699</string>
 				<string>UARPSupportedAccessoryAirPodsBud</string>
 			</array>
 		</dict>
@@ -52,6 +58,9 @@
 			<key>baseClasses</key>
 			<array>
 				<string>UARPSupportedAccessoryA3064</string>
+				<string>UARPSupportedAccessoryA3048</string>
+				<string>UARPSupportedAccessoryA3053</string>
+				<string>UARPSupportedAccessoryA2699</string>
 				<string>UARPSupportedAccessoryAirPodsBud</string>
 			</array>
 		</dict>
@@ -65,6 +74,9 @@
 			<key>baseClasses</key>
 			<array>
 				<string>UARPSupportedAccessoryA3064</string>
+				<string>UARPSupportedAccessoryA3048</string>
+				<string>UARPSupportedAccessoryA3053</string>
+				<string>UARPSupportedAccessoryA2699</string>
 				<string>UARPSupportedAccessoryAirPodsBud</string>
 			</array>
 		</dict>
@@ -78,6 +90,9 @@
 			<key>baseClasses</key>
 			<array>
 				<string>UARPSupportedAccessoryA3122</string>
+				<string>UARPSupportedAccessoryA3059</string>
+				<string>UARPSupportedAccessoryA2968</string>
+				<string>UARPSupportedAccessoryA2617</string>
 				<string>UARPSupportedAccessoryAirPodsCase</string>
 			</array>
 		</dict>
@@ -91,6 +106,9 @@
 			<key>baseClasses</key>
 			<array>
 				<string>UARPSupportedAccessoryA3122USB</string>
+				<string>UARPSupportedAccessoryA3059USB</string>
+				<string>UARPSupportedAccessoryA2968USB</string>
+				<string>UARPSupportedAccessoryA2617USB</string>
 				<string>UARPSupportedAccessoryAirPodsCaseUSB</string>
 			</array>
 		</dict>
@@ -104,6 +122,9 @@
 			<key>baseClasses</key>
 			<array>
 				<string>UARPSupportedAccessoryA3122USB</string>
+				<string>UARPSupportedAccessoryA3059USB</string>
+				<string>UARPSupportedAccessoryA2968USB</string>
+				<string>UARPSupportedAccessoryA2617USB</string>
 				<string>UARPSupportedAccessoryAirPodsCaseUSB</string>
 			</array>
 		</dict>

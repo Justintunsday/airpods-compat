@@ -13,6 +13,18 @@
 | 越狱 | rootless（Dopamine / ElleKit），同时兼容 roothide 布局 |
 | 交付 | 1) rootless 越狱包（tweak）2) 控制 App（GitHub Actions 编译） |
 
+## 兼容性
+
+| iOS | 状态 | 说明 |
+|---|---|---|
+| 18.0 – 18.6.2 | 构建支持 | iPhone 16 出厂最低 18.0；UARP/CoreBluetooth hook 走老类回退（CI 分析 18.6.2 校验） |
+| 26.x | 已验证目标 | 26.6.2 为当前主目标 |
+| 27.x | 源版本 | 原生已支持，tweak 自动跳过注册 |
+| jailbreak | rootless + rootful | CI 同时产出 `iphoneos-arm64`(rootless) 与 `iphoneos-arm`(rootful) 两个 deb |
+
+> 同一台 iPhone 16 无法低于 iOS 18.0；更旧机型（iOS 15/16）+ rootful 理论上可用，
+> 但 `HeadphoneManager` 特性集需要按版本另适配。
+
 ## 已知差异（来自 DSC 字符串/类名 diff）
 
 iOS 26.6.2 相对 iOS 27.0 缺少的 AirPods 5 相关项：

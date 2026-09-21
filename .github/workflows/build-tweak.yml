@@ -34,9 +34,16 @@ jobs:
       - name: Build rootless package
         run: |
           make -C tweak package FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=rootless
-          find tweak/packages -name '*.deb' -exec ls -la {} \;
+          ls -la tweak/packages/
 
-      - name: Upload deb
+      - name: Build rootful package
+        run: |
+          rm -rf tweak/packages
+          make -C tweak clean >/dev/null 2>&1 || true
+          make -C tweak package FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=
+          ls -la tweak/packages/
+
+      - name: Upload debs
         uses: actions/upload-artifact@v4
         with:
           name: airpodscompat-deb

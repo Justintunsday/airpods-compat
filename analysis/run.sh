@@ -96,19 +96,29 @@ for dsc in "${DSCS[@]}"; do
 
   # --- Swift dispatch tracing ---
   # positive control: xref on allFeatureContents() must show the call inside
-  # HeadphoneDevice.featureContent; then xref the getter itself.
+  # HeadphoneDevice.featureContent; then xref the getter itself per consumer
+  # image (full --all scans take 30min+ on a split cache, so stay targeted).
   case "$VERSION" in
-    27.0)   XREF_ADDRS="0x2027139b0 0x2027144c0" ;;
-    26.6.2) XREF_ADDRS="0x1dcbbfdcc 0x1dcbc0744" ;;
-    *)      XREF_ADDRS="" ;;
+    27.0)   XREF_FACTORY="0x2027139b0"; XREF_GETTER="0x2027144c0" ;;
+    26.6.2) XREF_FACTORY="0x1dcbbfdcc"; XREF_GETTER="0x1dcbc0744" ;;
+    *)      XREF_FACTORY="";            XREF_GETTER="" ;;
   esac
-  if [[ -n "$XREF_ADDRS" ]]; then
+  if [[ -n "$XREF_FACTORY" ]]; then
     : >"$b/xref.txt"
-    for addr in $XREF_ADDRS; do
+    {
+      echo "### positive control: xref factory $XREF_FACTORY (HeadphoneManager)"
+    } >>"$b/xref.txt"
+    run_to 900 ipsw dyld xref "$dsc" "$XREF_FACTORY" \
+      --image /System/Library/PrivateFrameworks/HeadphoneManager.framework/HeadphoneManager \
+      >>"$b/xref.txt" 2>&1
+    for img in \
+      /System/Library/PrivateFrameworks/HeadphoneSettingsUI.framework/HeadphoneSettingsUI \
+      /System/Library/PrivateFrameworks/HeadphoneConfigs.framework/HeadphoneConfigs \
+      /System/Library/PreferenceBundles/BluetoothSettings.bundle/BluetoothSettings ; do
       {
-        echo "### xref $addr"
+        echo "### xref getter $XREF_GETTER in $img"
       } >>"$b/xref.txt"
-      run_to 1800 ipsw dyld xref "$dsc" "$addr" --all >>"$b/xref.txt" 2>&1
+      run_to 900 ipsw dyld xref "$dsc" "$XREF_GETTER" --image "$img" >>"$b/xref.txt" 2>&1
     done
   fi
 done

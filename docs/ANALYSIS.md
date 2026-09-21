@@ -240,3 +240,21 @@ fixup 间接）。`ipsw macho info -u` 对抽取出的 dylib 返回 "no fixups"�
 2. CI 上用 `ipsw dyld xref`（macOS，处理完整缓存 fixup）对以下地址做全缓存交叉引用：
    `HeadphoneDevice.featureContent` getter（两版各一）与 UI 协议描述符地址
 3. 或自行解析 chained fixups，定位 vtable 槽位后反查消费者
+
+### 11.9 xref 可行性结论（第 1 项任务结果）
+
+按任务边界在 CI（万兆缓存、macOS）上跑了两次 `ipsw dyld xref`：
+
+- `--all`：64 分钟未完成，人工取消
+- 按镜像定向（HeadphoneManager / HeadphoneSettingsUI / HeadphoneConfigs / BluetoothSettings）：
+  17 分钟未完成，人工取消
+
+结论：`ipsw dyld xref` 上游标记 WIP，在 split cache 上**不可用**；已从默认矩阵移除，
+保留为手动脚本 `analysis/xref.sh`（带 timeout，输出 `xref.txt`）。
+
+补充证据：抽取出的 dylib **没有 `LC_DYLD_CHAINED_FIXUPS`**（只有 `LC_DYSYMTAB` 的 745 条
+indirect symtab），即缓存内的 rebase 信息在抽取时未保留 → 元数据 vtable 槽位无法用本地工具
+静态还原（对 getter 地址做原始 8 字节扫描只命中**符号表**条目，不是分发槽）。
+
+因此第 1 项任务在现有工具下**无法完成**，按任务边界第 2 条：不做 B768 映射、不伪造
+witness table、不加猜测性 hook。转入第 3 项：真机验证通用设置页与识别效果。

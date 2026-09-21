@@ -94,33 +94,8 @@ for dsc in "${DSCS[@]}"; do
     run_to 120 ipsw dyld image "$dsc" "$img" >"$b/image_$name.txt" 2>&1
   done
 
-  # --- Swift dispatch tracing ---
-  # positive control: xref on allFeatureContents() must show the call inside
-  # HeadphoneDevice.featureContent; then xref the getter itself per consumer
-  # image (full --all scans take 30min+ on a split cache, so stay targeted).
-  case "$VERSION" in
-    27.0)   XREF_FACTORY="0x2027139b0"; XREF_GETTER="0x2027144c0" ;;
-    26.6.2) XREF_FACTORY="0x1dcbbfdcc"; XREF_GETTER="0x1dcbc0744" ;;
-    *)      XREF_FACTORY="";            XREF_GETTER="" ;;
-  esac
-  if [[ -n "$XREF_FACTORY" ]]; then
-    : >"$b/xref.txt"
-    {
-      echo "### positive control: xref factory $XREF_FACTORY (HeadphoneManager)"
-    } >>"$b/xref.txt"
-    run_to 900 ipsw dyld xref "$dsc" "$XREF_FACTORY" \
-      --image /System/Library/PrivateFrameworks/HeadphoneManager.framework/HeadphoneManager \
-      >>"$b/xref.txt" 2>&1
-    for img in \
-      /System/Library/PrivateFrameworks/HeadphoneSettingsUI.framework/HeadphoneSettingsUI \
-      /System/Library/PrivateFrameworks/HeadphoneConfigs.framework/HeadphoneConfigs \
-      /System/Library/PreferenceBundles/BluetoothSettings.bundle/BluetoothSettings ; do
-      {
-        echo "### xref getter $XREF_GETTER in $img"
-      } >>"$b/xref.txt"
-      run_to 900 ipsw dyld xref "$dsc" "$XREF_GETTER" --image "$img" >>"$b/xref.txt" 2>&1
-    done
-  fi
+  # note: `ipsw dyld xref` is WIP and does not finish on split caches
+  # (1h+ on --all). If needed run analysis/xref.sh manually.
 done
 
 echo "==> done"

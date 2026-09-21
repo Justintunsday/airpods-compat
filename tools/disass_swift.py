@@ -91,16 +91,14 @@ def main():
         if insn.mnemonic == "adrp":
             registers[insn.reg_name(ops[0].reg)] = ops[1].imm
             target = name_of(ops[1].imm)
-            if target:
-                note = f"  ; {target}"
+            note = f"  ; {target}" if target else f"  ; {ops[1].imm:#x}"
         elif insn.mnemonic == "add" and len(ops) == 3 and ops[2].type == capstone.arm64.ARM64_OP_IMM:
             base = registers.get(insn.reg_name(ops[1].reg))
             if base is not None:
                 value = base + ops[2].imm
                 registers[insn.reg_name(ops[0].reg)] = value
                 target = name_of(value)
-                if target:
-                    note = f"  ; {target}"
+                note = f"  ; {target}" if target else f"  ; {value:#x}"
         elif insn.mnemonic in ("bl", "b") and ops and ops[0].type == capstone.arm64.ARM64_OP_IMM:
             target = name_of(ops[0].imm)
             note = f"  ; -> {target}" if target else f"  ; -> {hex(ops[0].imm)} (external)"

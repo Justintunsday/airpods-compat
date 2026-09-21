@@ -72,6 +72,24 @@ for dsc in "${DSCS[@]}"; do
   # note: `symaddr --all` / full-cache `objc` dumps build a symbol cache and
   # take 30min+ on a split cache, so stay targeted here.
 
+  # who links HeadphoneManager? (consumer discovery)
+  case "$VERSION" in
+    26.6.2|27.0)
+      : >"$b/importers.txt"
+      {
+        echo "### importers of HeadphoneManager"
+      } >>"$b/importers.txt"
+      run_to 1800 ipsw dyld imports "$dsc" \
+        /System/Library/PrivateFrameworks/HeadphoneManager.framework/HeadphoneManager \
+        >>"$b/importers.txt" 2>&1
+      {
+        echo "### importers of HeadphoneSettingsUI"
+      } >>"$b/importers.txt"
+      run_to 1800 ipsw dyld imports "$dsc" \
+        /System/Library/PrivateFrameworks/HeadphoneSettingsUI.framework/HeadphoneSettingsUI \
+        >>"$b/importers.txt" 2>&1 ;;
+  esac
+
   IMAGES=(
     "/System/Library/PrivateFrameworks/CoreUARP.framework/CoreUARP"
     "/System/Library/Frameworks/CoreBluetooth.framework/CoreBluetooth"

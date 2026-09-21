@@ -1,4 +1,4 @@
-#import "SelfTest.h"
+﻿#import "SelfTest.h"
 
 #import <UIKit/UIKit.h>
 #import <objc/runtime.h>
@@ -9,44 +9,34 @@
 #pragma mark - model table (mirrors the tweak's AirPodsCompatModels.plist)
 
 static NSArray<NSDictionary *> *ACTestModels(void) {
-    NSArray *budBases = @[
-        @"UARPSupportedAccessoryA3064", // AirPods Pro 3 (26+)
-        @"UARPSupportedAccessoryA3048", // AirPods Pro 2 USB-C (17+)
-        @"UARPSupportedAccessoryA3053", // AirPods 4 (18+)
-        @"UARPSupportedAccessoryA2699", // AirPods Pro 2
-        @"UARPSupportedAccessoryAirPodsBud",
-    ];
-    NSArray *caseBases = @[
-        @"UARPSupportedAccessoryA3122", // AirPods Pro 3 case (26+)
-        @"UARPSupportedAccessoryA3059", // AirPods 4 ANC case (18+)
-        @"UARPSupportedAccessoryA2968", // AirPods Pro 2 USB-C case (17+)
-        @"UARPSupportedAccessoryA2617",
-        @"UARPSupportedAccessoryAirPodsCase",
-    ];
-    NSArray *caseUSBBases = @[
-        @"UARPSupportedAccessoryA3122USB",
-        @"UARPSupportedAccessoryA3059USB",
-        @"UARPSupportedAccessoryA2968USB",
-        @"UARPSupportedAccessoryA2617USB",
-        @"UARPSupportedAccessoryAirPodsCaseUSB",
-    ];
-
-    return @[
-        @{ @"model": @"A3532", @"pid": @0x2036, @"display": @"AirPods 5",
-           @"alt": @[@"A3531"], @"bases": budBases },
-        @{ @"model": @"A3533", @"pid": @0x2037, @"display": @"AirPods 5",
-           @"bases": budBases },
-        @{ @"model": @"A3440", @"pid": @0x2030, @"display": @"AirPods 5 (Wireless Charging)",
-           @"alt": @[@"A3439"], @"bases": budBases },
-        @{ @"model": @"A3441", @"pid": @0x2032, @"display": @"AirPods 5 (Wireless Charging)",
-           @"bases": budBases },
-        @{ @"model": @"A3529", @"pid": @0x2035, @"display": @"AirPods 5 (Charging Case)",
-           @"bases": caseBases },
-        @{ @"model": @"A3529USB", @"pid": @0x13a5, @"display": @"AirPods 5 (Charging Case)",
-           @"bases": caseUSBBases },
-        @{ @"model": @"A3530USB", @"pid": @0x13a4, @"display": @"AirPods 5 (Wireless Charging Case)",
-           @"bases": caseUSBBases },
-    ];
+    static NSArray<NSDictionary *> *models;
+    static dispatch_once_t once;
+    dispatch_once(&once, ^{
+        NSString *path = [[NSBundle mainBundle] pathForResource:@"Models" ofType:@"json"];
+        NSData *data = path ? [NSData dataWithContentsOfFile:path] : nil;
+        if (data) {
+            NSDictionary *json = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];
+            if ([json isKindOfClass:[NSDictionary class]]) {
+                models = json[@"models"];
+            }
+        }
+        if (!models.count) {
+            // minimal fallback if the bundled table is missing
+            models = @[
+                @{ @"model": @"A3532", @"productID": @0x2036, @"display": @"AirPods 5",
+                   @"appleModelNumber": @"A3532", @"alt": @[@"A3531"],
+                   @"baseClasses": @[@"UARPSupportedAccessoryA3064",
+                                     @"UARPSupportedAccessoryA3048",
+                                     @"UARPSupportedAccessoryA3053",
+                                     @"UARPSupportedAccessoryAirPodsBud"] },
+                @{ @"model": @"A3440", @"productID": @0x2030, @"display": @"AirPods 5 (Wireless Charging)",
+                   @"appleModelNumber": @"A3440", @"alt": @[@"A3439"],
+                   @"baseClasses": @[@"UARPSupportedAccessoryA3064",
+                                     @"UARPSupportedAccessoryAirPodsBud"] },
+            ];
+        }
+    });
+    return models;
 }
 
 static NSArray<NSString *> *ACFrameworkPaths(void) {
@@ -94,7 +84,7 @@ static NSString *ACDeviceIdentifier(void) {
 static NSMutableDictionary<NSString *, NSDictionary *> *gDryRunTable;
 
 static uint32_t ACDryProductID(Class self, SEL _cmd) {
-    return (uint32_t)[gDryRunTable[NSStringFromClass(self)][@"pid"] unsignedIntValue];
+    return (uint32_t)[gDryRunTable[NSStringFromClass(self)][@"productID"] unsignedIntValue];
 }
 
 static id ACDryAppleModelNumber(Class self, SEL _cmd) {
@@ -191,7 +181,7 @@ static void ACRunRegistrationDryRun(NSMutableString *out) {
             continue;
         }
 
-        Class base = ACFirstAvailableClass(model[@"bases"]);
+        Class base = ACFirstAvailableClass(model[@"baseClasses"]);
         if (!base) {
             [out appendFormat:@"  [fail] %@ 找不到可用的基类\n", model[@"model"]];
             continue;
@@ -235,7 +225,7 @@ static void ACRunRegistrationDryRun(NSMutableString *out) {
             if (preexisting) alreadyRegistered++;
             [out appendFormat:@"  [ok%@] %@ (productID=0x%x, base=%@)\n",
                  preexisting ? @"·已注册" : @"",
-                 model[@"model"], [model[@"pid"] unsignedIntValue], NSStringFromClass(base)];
+                 model[@"model"], [model[@"productID"] unsignedIntValue], NSStringFromClass(base)];
             [out appendFormat:@"       props: identifier=%@ hwID=%@ appleModelNumber=%@\n",
                  ACKVC(accessory, @"identifier"), ACKVC(accessory, @"hwID"),
                  ACKVC(accessory, @"appleModelNumber")];

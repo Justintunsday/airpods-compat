@@ -1,0 +1,543 @@
+{
+  "models": [
+    {
+      "nativeClass": "UARPSupportedAccessoryA2513",
+      "model": "A2513",
+      "appleModelNumber": "A2513",
+      "productID": 8209,
+      "display": "A2513",
+      "family": "max",
+      "baseClasses": [
+        "UARPSupportedAccessoryA3454",
+        "UARPSupportedAccessoryBeatsBluetooth"
+      ],
+      "alt": [
+        "A2512"
+      ]
+    },
+    {
+      "nativeClass": "UARPSupportedAccessoryA2617",
+      "model": "A2617",
+      "appleModelNumber": "A2700",
+      "productID": 8213,
+      "display": "AirPods Pro 2 (Charging Case)",
+      "family": "case",
+      "baseClasses": [
+        "UARPSupportedAccessoryA3122",
+        "UARPSupportedAccessoryA3059",
+        "UARPSupportedAccessoryA2968",
+        "UARPSupportedAccessoryA2617",
+        "UARPSupportedAccessoryAirPodsCase"
+      ],
+      "alt": [
+        "A2617"
+      ]
+    },
+    {
+      "nativeClass": "UARPSupportedAccessoryA2617USB",
+      "model": "A2617USB",
+      "appleModelNumber": "A2617USB",
+      "productID": 4373,
+      "display": "A2617USB",
+      "family": "caseUSB",
+      "baseClasses": [
+        "UARPSupportedAccessoryA3122USB",
+        "UARPSupportedAccessoryA3059USB",
+        "UARPSupportedAccessoryA2968USB",
+        "UARPSupportedAccessoryA2617USB",
+        "UARPSupportedAccessoryAirPodsCaseUSB"
+      ]
+    },
+    {
+      "nativeClass": "UARPSupportedAccessoryA2699",
+      "model": "A2699",
+      "appleModelNumber": "A2699",
+      "productID": 8212,
+      "display": "AirPods Pro 2",
+      "family": "bud",
+      "baseClasses": [
+        "UARPSupportedAccessoryA3064",
+        "UARPSupportedAccessoryA3048",
+        "UARPSupportedAccessoryA3053",
+        "UARPSupportedAccessoryA2699",
+        "UARPSupportedAccessoryAirPodsBud"
+      ],
+      "alt": [
+        "A2618"
+      ]
+    },
+    {
+      "nativeClass": "UARPSupportedAccessoryA2871",
+      "model": "A2871",
+      "appleModelNumber": "A2871",
+      "productID": 8214,
+      "display": "A2871",
+      "family": "max",
+      "baseClasses": [
+        "UARPSupportedAccessoryA3454",
+        "UARPSupportedAccessoryBeatsBluetooth"
+      ],
+      "alt": [
+        "A2872"
+      ]
+    },
+    {
+      "nativeClass": "UARPSupportedAccessoryA2924",
+      "model": "A2924",
+      "appleModelNumber": "A2924",
+      "productID": 8215,
+      "display": "A2924",
+      "family": "max",
+      "baseClasses": [
+        "UARPSupportedAccessoryA3454",
+        "UARPSupportedAccessoryBeatsBluetooth"
+      ]
+    },
+    {
+      "nativeClass": "UARPSupportedAccessoryA2968",
+      "model": "A2968",
+      "appleModelNumber": "A2968",
+      "productID": 8216,
+      "display": "AirPods Pro 2 (USB-C Case)",
+      "family": "case",
+      "baseClasses": [
+        "UARPSupportedAccessoryA3122",
+        "UARPSupportedAccessoryA3059",
+        "UARPSupportedAccessoryA2968",
+        "UARPSupportedAccessoryA2617",
+        "UARPSupportedAccessoryAirPodsCase"
+      ]
+    },
+    {
+      "nativeClass": "UARPSupportedAccessoryA2968USB",
+      "model": "A2968USB",
+      "appleModelNumber": "A2968USB",
+      "productID": 5022,
+      "display": "A2968USB",
+      "family": "caseUSB",
+      "baseClasses": [
+        "UARPSupportedAccessoryA3122USB",
+        "UARPSupportedAccessoryA3059USB",
+        "UARPSupportedAccessoryA2968USB",
+        "UARPSupportedAccessoryA2617USB",
+        "UARPSupportedAccessoryAirPodsCaseUSB"
+      ]
+    },
+    {
+      "nativeClass": "UARPSupportedAccessoryA3048",
+      "model": "A3048",
+      "appleModelNumber": "A3048",
+      "productID": 8228,
+      "display": "AirPods Pro 2 (USB-C)",
+      "family": "bud",
+      "baseClasses": [
+        "UARPSupportedAccessoryA3064",
+        "UARPSupportedAccessoryA3048",
+        "UARPSupportedAccessoryA3053",
+        "UARPSupportedAccessoryA2699",
+        "UARPSupportedAccessoryAirPodsBud"
+      ],
+      "alt": [
+        "A3047"
+      ]
+    },
+    {
+      "nativeClass": "UARPSupportedAccessoryA3053",
+      "model": "A3053",
+      "appleModelNumber": "A3053",
+      "productID": 8217,
+      "display": "AirPods 4",
+      "family": "bud",
+      "baseClasses": [
+        "UARPSupportedAccessoryA3064",
+        "UARPSupportedAccessoryA3048",
+        "UARPSupportedAccessoryA3053",
+        "UARPSupportedAccessoryA2699",
+        "UARPSupportedAccessoryAirPodsBud"
+      ],
+      "alt": [
+        "A3050"
+      ]
+    },
+    {
+      "nativeClass": "UARPSupportedAccessoryA3054",
+      "model": "A3054",
+      "appleModelNumber": "A3054",
+      "productID": 8222,
+      "display": "AirPods 4",
+      "family": "bud",
+      "baseClasses": [
+        "UARPSupportedAccessoryA3064",
+        "UARPSupportedAccessoryA3048",
+        "UARPSupportedAccessoryA3053",
+        "UARPSupportedAccessoryA2699",
+        "UARPSupportedAccessoryAirPodsBud"
+      ]
+    },
+    {
+      "nativeClass": "UARPSupportedAccessoryA3056",
+      "model": "A3056",
+      "appleModelNumber": "A3056",
+      "productID": 8219,
+      "display": "AirPods 4 (ANC)",
+      "family": "bud",
+      "baseClasses": [
+        "UARPSupportedAccessoryA3064",
+        "UARPSupportedAccessoryA3048",
+        "UARPSupportedAccessoryA3053",
+        "UARPSupportedAccessoryA2699",
+        "UARPSupportedAccessoryAirPodsBud"
+      ],
+      "alt": [
+        "A3055"
+      ]
+    },
+    {
+      "nativeClass": "UARPSupportedAccessoryA3057",
+      "model": "A3057",
+      "appleModelNumber": "A3057",
+      "productID": 8224,
+      "display": "AirPods 4 (ANC)",
+      "family": "bud",
+      "baseClasses": [
+        "UARPSupportedAccessoryA3064",
+        "UARPSupportedAccessoryA3048",
+        "UARPSupportedAccessoryA3053",
+        "UARPSupportedAccessoryA2699",
+        "UARPSupportedAccessoryAirPodsBud"
+      ]
+    },
+    {
+      "nativeClass": "UARPSupportedAccessoryA3058USB",
+      "model": "A3058USB",
+      "appleModelNumber": "A3058",
+      "productID": 5023,
+      "display": "AirPods 4 (Charging Case)",
+      "family": "caseUSB",
+      "baseClasses": [
+        "UARPSupportedAccessoryA3122USB",
+        "UARPSupportedAccessoryA3059USB",
+        "UARPSupportedAccessoryA2968USB",
+        "UARPSupportedAccessoryA2617USB",
+        "UARPSupportedAccessoryAirPodsCaseUSB"
+      ]
+    },
+    {
+      "nativeClass": "UARPSupportedAccessoryA3059",
+      "model": "A3059",
+      "appleModelNumber": "A3059",
+      "productID": 8220,
+      "display": "AirPods 4 (Wireless Charging Case)",
+      "family": "case",
+      "baseClasses": [
+        "UARPSupportedAccessoryA3122",
+        "UARPSupportedAccessoryA3059",
+        "UARPSupportedAccessoryA2968",
+        "UARPSupportedAccessoryA2617",
+        "UARPSupportedAccessoryAirPodsCase"
+      ]
+    },
+    {
+      "nativeClass": "UARPSupportedAccessoryA3059USB",
+      "model": "A3059USB",
+      "appleModelNumber": "A3059USB",
+      "productID": 5024,
+      "display": "A3059USB",
+      "family": "caseUSB",
+      "baseClasses": [
+        "UARPSupportedAccessoryA3122USB",
+        "UARPSupportedAccessoryA3059USB",
+        "UARPSupportedAccessoryA2968USB",
+        "UARPSupportedAccessoryA2617USB",
+        "UARPSupportedAccessoryAirPodsCaseUSB"
+      ]
+    },
+    {
+      "nativeClass": "UARPSupportedAccessoryA3064",
+      "model": "A3064",
+      "appleModelNumber": "A3064",
+      "productID": 8231,
+      "display": "AirPods Pro 3",
+      "family": "bud",
+      "baseClasses": [
+        "UARPSupportedAccessoryA3064",
+        "UARPSupportedAccessoryA3048",
+        "UARPSupportedAccessoryA3053",
+        "UARPSupportedAccessoryA2699",
+        "UARPSupportedAccessoryAirPodsBud"
+      ],
+      "alt": [
+        "A3063"
+      ]
+    },
+    {
+      "nativeClass": "UARPSupportedAccessoryA3065",
+      "model": "A3065",
+      "appleModelNumber": "A3065",
+      "productID": 8232,
+      "display": "AirPods Pro 3",
+      "family": "bud",
+      "baseClasses": [
+        "UARPSupportedAccessoryA3064",
+        "UARPSupportedAccessoryA3048",
+        "UARPSupportedAccessoryA3053",
+        "UARPSupportedAccessoryA2699",
+        "UARPSupportedAccessoryAirPodsBud"
+      ]
+    },
+    {
+      "nativeClass": "UARPSupportedAccessoryA3122",
+      "model": "A3122",
+      "appleModelNumber": "A3122",
+      "productID": 8233,
+      "display": "AirPods Pro 3 (MagSafe Charging Case)",
+      "family": "case",
+      "baseClasses": [
+        "UARPSupportedAccessoryA3122",
+        "UARPSupportedAccessoryA3059",
+        "UARPSupportedAccessoryA2968",
+        "UARPSupportedAccessoryA2617",
+        "UARPSupportedAccessoryAirPodsCase"
+      ]
+    },
+    {
+      "nativeClass": "UARPSupportedAccessoryA3122USB",
+      "model": "A3122USB",
+      "appleModelNumber": "A3122USB",
+      "productID": 5025,
+      "display": "A3122USB",
+      "family": "caseUSB",
+      "baseClasses": [
+        "UARPSupportedAccessoryA3122USB",
+        "UARPSupportedAccessoryA3059USB",
+        "UARPSupportedAccessoryA2968USB",
+        "UARPSupportedAccessoryA2617USB",
+        "UARPSupportedAccessoryAirPodsCaseUSB"
+      ]
+    },
+    {
+      "nativeClass": "UARPSupportedAccessoryA3140",
+      "model": "A3140",
+      "appleModelNumber": "A3140",
+      "productID": 8229,
+      "display": "A3140",
+      "family": "max",
+      "baseClasses": [
+        "UARPSupportedAccessoryA3454",
+        "UARPSupportedAccessoryBeatsBluetooth"
+      ]
+    },
+    {
+      "nativeClass": "UARPSupportedAccessoryA3150",
+      "model": "A3150",
+      "appleModelNumber": "A3150",
+      "productID": 8230,
+      "display": "A3150",
+      "family": "max",
+      "baseClasses": [
+        "UARPSupportedAccessoryA3454",
+        "UARPSupportedAccessoryBeatsBluetooth"
+      ],
+      "alt": [
+        "A3151"
+      ]
+    },
+    {
+      "nativeClass": "UARPSupportedAccessoryA3157",
+      "model": "A3157",
+      "appleModelNumber": "A3157",
+      "productID": 8221,
+      "display": "A3157",
+      "family": "max",
+      "baseClasses": [
+        "UARPSupportedAccessoryA3454",
+        "UARPSupportedAccessoryBeatsBluetooth"
+      ],
+      "alt": [
+        "A3158"
+      ]
+    },
+    {
+      "nativeClass": "UARPSupportedAccessoryA3211",
+      "model": "A3211",
+      "appleModelNumber": "A3211",
+      "productID": 8218,
+      "display": "A3211",
+      "family": "max",
+      "baseClasses": [
+        "UARPSupportedAccessoryA3454",
+        "UARPSupportedAccessoryBeatsBluetooth"
+      ]
+    },
+    {
+      "nativeClass": "UARPSupportedAccessoryA3440",
+      "model": "A3440",
+      "appleModelNumber": "A3440",
+      "productID": 8240,
+      "display": "AirPods 5 (Wireless Charging)",
+      "family": "bud",
+      "baseClasses": [
+        "UARPSupportedAccessoryA3064",
+        "UARPSupportedAccessoryA3048",
+        "UARPSupportedAccessoryA3053",
+        "UARPSupportedAccessoryA2699",
+        "UARPSupportedAccessoryAirPodsBud"
+      ],
+      "alt": [
+        "A3439"
+      ]
+    },
+    {
+      "nativeClass": "UARPSupportedAccessoryA3441",
+      "model": "A3441",
+      "appleModelNumber": "A3441",
+      "productID": 8242,
+      "display": "AirPods 5 (Wireless Charging)",
+      "family": "bud",
+      "baseClasses": [
+        "UARPSupportedAccessoryA3064",
+        "UARPSupportedAccessoryA3048",
+        "UARPSupportedAccessoryA3053",
+        "UARPSupportedAccessoryA2699",
+        "UARPSupportedAccessoryAirPodsBud"
+      ]
+    },
+    {
+      "nativeClass": "UARPSupportedAccessoryA3454",
+      "model": "A3454",
+      "appleModelNumber": "A3454",
+      "productID": 8237,
+      "display": "AirPods Max 2",
+      "family": "max",
+      "baseClasses": [
+        "UARPSupportedAccessoryA3454",
+        "UARPSupportedAccessoryBeatsBluetooth"
+      ]
+    },
+    {
+      "nativeClass": "UARPSupportedAccessoryA3529",
+      "model": "A3529",
+      "appleModelNumber": "A3529",
+      "productID": 8245,
+      "display": "AirPods 5 (Charging Case)",
+      "family": "case",
+      "baseClasses": [
+        "UARPSupportedAccessoryA3122",
+        "UARPSupportedAccessoryA3059",
+        "UARPSupportedAccessoryA2968",
+        "UARPSupportedAccessoryA2617",
+        "UARPSupportedAccessoryAirPodsCase"
+      ]
+    },
+    {
+      "nativeClass": "UARPSupportedAccessoryA3529USB",
+      "model": "A3529USB",
+      "appleModelNumber": "A3529",
+      "productID": 5029,
+      "display": "AirPods 5 (Charging Case)",
+      "family": "caseUSB",
+      "baseClasses": [
+        "UARPSupportedAccessoryA3122USB",
+        "UARPSupportedAccessoryA3059USB",
+        "UARPSupportedAccessoryA2968USB",
+        "UARPSupportedAccessoryA2617USB",
+        "UARPSupportedAccessoryAirPodsCaseUSB"
+      ]
+    },
+    {
+      "nativeClass": "UARPSupportedAccessoryA3530USB",
+      "model": "A3530USB",
+      "appleModelNumber": "A3530",
+      "productID": 5028,
+      "display": "AirPods 5 (Wireless Charging Case)",
+      "family": "caseUSB",
+      "baseClasses": [
+        "UARPSupportedAccessoryA3122USB",
+        "UARPSupportedAccessoryA3059USB",
+        "UARPSupportedAccessoryA2968USB",
+        "UARPSupportedAccessoryA2617USB",
+        "UARPSupportedAccessoryAirPodsCaseUSB"
+      ]
+    },
+    {
+      "nativeClass": "UARPSupportedAccessoryA3532",
+      "model": "A3532",
+      "appleModelNumber": "A3532",
+      "productID": 8246,
+      "display": "AirPods 5",
+      "family": "bud",
+      "baseClasses": [
+        "UARPSupportedAccessoryA3064",
+        "UARPSupportedAccessoryA3048",
+        "UARPSupportedAccessoryA3053",
+        "UARPSupportedAccessoryA2699",
+        "UARPSupportedAccessoryAirPodsBud"
+      ],
+      "alt": [
+        "A3531"
+      ]
+    },
+    {
+      "nativeClass": "UARPSupportedAccessoryA3533",
+      "model": "A3533",
+      "appleModelNumber": "A3533",
+      "productID": 8247,
+      "display": "AirPods 5",
+      "family": "bud",
+      "baseClasses": [
+        "UARPSupportedAccessoryA3064",
+        "UARPSupportedAccessoryA3048",
+        "UARPSupportedAccessoryA3053",
+        "UARPSupportedAccessoryA2699",
+        "UARPSupportedAccessoryAirPodsBud"
+      ]
+    },
+    {
+      "nativeClass": "UARPSupportedAccessoryA3577",
+      "model": "A3577",
+      "appleModelNumber": "A3577",
+      "productID": 8248,
+      "display": "A3577",
+      "family": "max",
+      "baseClasses": [
+        "UARPSupportedAccessoryA3454",
+        "UARPSupportedAccessoryBeatsBluetooth"
+      ]
+    }
+  ],
+  "displayNames": {
+    "8209": "A2513",
+    "8213": "AirPods Pro 2 (Charging Case)",
+    "4373": "A2617USB",
+    "8212": "AirPods Pro 2",
+    "8214": "A2871",
+    "8215": "A2924",
+    "8216": "AirPods Pro 2 (USB-C Case)",
+    "5022": "A2968USB",
+    "8228": "AirPods Pro 2 (USB-C)",
+    "8217": "AirPods 4",
+    "8222": "AirPods 4",
+    "8219": "AirPods 4 (ANC)",
+    "8224": "AirPods 4 (ANC)",
+    "5023": "AirPods 4 (Charging Case)",
+    "8220": "AirPods 4 (Wireless Charging Case)",
+    "5024": "A3059USB",
+    "8231": "AirPods Pro 3",
+    "8232": "AirPods Pro 3",
+    "8233": "AirPods Pro 3 (MagSafe Charging Case)",
+    "5025": "A3122USB",
+    "8229": "A3140",
+    "8230": "A3150",
+    "8221": "A3157",
+    "8218": "A3211",
+    "8240": "AirPods 5 (Wireless Charging)",
+    "8242": "AirPods 5 (Wireless Charging)",
+    "8237": "AirPods Max 2",
+    "8245": "AirPods 5 (Charging Case)",
+    "5029": "AirPods 5 (Charging Case)",
+    "5028": "AirPods 5 (Wireless Charging Case)",
+    "8246": "AirPods 5",
+    "8247": "AirPods 5",
+    "8248": "A3577"
+  }
+}

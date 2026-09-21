@@ -139,7 +139,7 @@ static void ACRegisterUARPAccessories(void) {
     SEL addSel = sel_registerName("addSupportedAccessory:");
 
     for (NSDictionary *model in gConfig[@"UARP"]) {
-        NSString *clsName = [NSString stringWithFormat:@"AirPodsCompat_%@", model[@"appleModelNumber"]];
+        NSString *clsName = [NSString stringWithFormat:@"AirPodsCompat_%@", model[@"model"]];
         Class cls = NSClassFromString(clsName);
 
         if (!cls) {

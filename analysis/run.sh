@@ -90,7 +90,10 @@ for dsc in "${DSCS[@]}"; do
   mkdir -p "$b/dylibs"
   for img in "${IMAGES[@]}"; do
     name="$(basename "$img")"
-    run_to 300 ipsw dyld macho "$dsc" "$img" --objc --symbols --strings --extract --output "$b/dylibs" >>"$b/macho_$name.txt" 2>&1
+    # full TOC dump (objc interfaces / symbols / strings)
+    run_to 300 ipsw dyld macho "$dsc" "$img" --objc --symbols --strings >"$b/macho_$name.txt" 2>&1
+    # extracted Mach-O for local tooling (no TOC is printed in this mode)
+    run_to 300 ipsw dyld macho "$dsc" "$img" --extract --output "$b/dylibs" >>"$b/extract_$name.txt" 2>&1
     run_to 120 ipsw dyld image "$dsc" "$img" >"$b/image_$name.txt" 2>&1
   done
 done

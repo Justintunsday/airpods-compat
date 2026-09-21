@@ -2,6 +2,11 @@ import XCTest
 
 final class AirPodsCompatTests: XCTestCase {
 
+    override func setUp() {
+        super.setUp()
+        ACInstallTestStubs()
+    }
+
     /// Model table integrity: every extracted class must be present and carry
     /// a product ID.
     func testModelTableIntegrity() {
@@ -23,6 +28,7 @@ final class AirPodsCompatTests: XCTestCase {
         let created = (summary["created"] as? NSNumber)?.intValue ?? 0
         let grew = (summary["grew"] as? NSNumber)?.boolValue ?? false
 
+        XCTAssertGreaterThanOrEqual(expected, 30, "stubs must force the full registration path")
         XCTAssertEqual(registered, expected, "every missing model must register")
 
         if created > 0 {

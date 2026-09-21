@@ -37,7 +37,8 @@ targets:
       base:
         GENERATE_INFOPLIST_FILE: YES
         SWIFT_VERSION: "5.9"
-        SWIFT_OBJC_BRIDGING_HEADER: Sources/AirPodsCompat-Bridging-Header.h
+        SWIFT_OBJC_BRIDGING_HEADER: Tests/Tests-Bridging-Header.h
+        HEADER_SEARCH_PATHS: Sources
         CODE_SIGNING_ALLOWED: NO
         CODE_SIGNING_REQUIRED: NO
     dependencies:

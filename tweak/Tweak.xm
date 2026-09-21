@@ -125,6 +125,15 @@ static void ACRegisterUARPAccessories(void) {
 
 #pragma mark - CoreBluetooth display names
 
+// private classes from the dyld_shared_cache (no on-disk headers)
+@interface CBDevice : NSObject
+@property (nonatomic) unsigned int productID;
+@property (nonatomic, copy) NSString *productName;
+@end
+
+@interface CBAccessoryLogging : NSObject
+@end
+
 %hook CBDevice
 
 - (NSString *)productName {

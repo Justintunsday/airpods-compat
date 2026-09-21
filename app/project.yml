@@ -23,5 +23,6 @@ targets:
         INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents: YES
         TARGETED_DEVICE_FAMILY: "1"
         SWIFT_VERSION: "5.9"
+        SWIFT_OBJC_BRIDGING_HEADER: Sources/AirPodsCompat-Bridging-Header.h
         CODE_SIGNING_ALLOWED: NO
         CODE_SIGNING_REQUIRED: NO

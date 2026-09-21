@@ -36,6 +36,12 @@ struct ContentView: View {
                 }
 
                 Section(header: Text("诊断")) {
+                    NavigationLink {
+                        SelfTestView()
+                    } label: {
+                        Label("运行自检（无需越狱）", systemImage: "stethoscope")
+                    }
+
                     Button("重新加载状态") { status = describeState() }
                     if !status.isEmpty {
                         Text(status).font(.footnote).foregroundColor(.secondary)

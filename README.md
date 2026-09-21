@@ -62,6 +62,20 @@ Actions 里手动触发 **Build Tweak** / **Build App**，或 push 到 `tweak/**
 - 安装 deb：`dpkg -i` 到 rootless 越狱环境（Dopamine / roothide）
 - 安装 ipa：TrollStore / AltStore 重签后安装
 
+## 非越狱自检（建议先做）
+
+`airpodscompat-app` 的 **诊断 → 运行自检（无需越狱）** 可直接在未越狱设备上验证：
+
+1. 用 AltStore / Sideloadly / TrollStore 安装 `AirPodsCompat-unsigned.ipa`（需重签）
+2. 打开 App → 诊断 → 运行自检
+3. 报告包含：
+   - 系统原生是否认识 A3532/A3533/A3440/A3441/A3529/A3529USB/A3530USB（以及 `+productID` 实际值）
+   - `HeadphoneManager` 的 `B868FeatureContent` 是否存在
+   - **动态注册干跑**：与越狱 tweak 完全相同的注册逻辑在本进程内执行并校验 PASS/FAIL
+4. 复制报告即可判断下一步
+
+> 无越狱只能验证「系统是否认识 + 注册逻辑是否可行」；让蓝牙守护进程真正生效仍需越狱 tweak。
+
 ## 分析流程
 
 1. Actions → **DSC Analysis** → Run workflow（默认分析 27.0 与 26.6.2）

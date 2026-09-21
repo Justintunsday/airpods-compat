@@ -19,11 +19,14 @@
 //
 // Hook targets (v0.4, from the iOS 26.6.2/27.0 HeadphoneManager analysis):
 //   HeadphoneDevice.allFeatureContents(productID:device:) - on iOS < 27
-//     substitute the AirPods 5 PIDs with the AirPods 4 (ANC) PID so the
-//     existing, genuine B768FeatureContent + witness tables drive the UI.
+//     substitute the AirPods 5 PIDs with a borrowed model PID so the existing,
+//     genuine FeatureContent class + witness tables drive the UI. Profile is
+//     selectable via the BorrowProfile pref:
+//       airpods4anc (default, B768 0x201b) / airpodspro2 (B698 0x2014) /
+//       airpodspro3 (B788 0x2027) / off
 //     On iOS 27+ the native B868FeatureContent already handles these PIDs,
 //     so the hook is not installed (version-gated via dlsym).
-//     See docs/ANALYSIS.md 11.12-11.14 for the call-chain evidence.
+//     See docs/ANALYSIS.md 11.12-11.16 for the call-chain evidence.
 
 #import <Foundation/Foundation.h>
 #import <objc/runtime.h>
@@ -43,6 +46,16 @@ static BOOL gEnabled = YES;
 static BOOL gUARPEnabled = YES;
 static BOOL gScopeAll = NO;
 static BOOL gRegistrationCrashed = NO;
+
+// Feature-content borrowing (v0.4, iOS 26.x only - see ACInstallFeatureContentBorrowing):
+// borrow targets available in the FeatureContent chain and their accepted PIDs.
+static const uint32_t kAirPods5ProductIDs[] = { 0x2036, 0x2030, 0x2037, 0x2032 };
+static const uint32_t kAirPods4AncProductID = 0x201b;
+static const uint32_t kAirPodsPro2ProductID = 0x2014;
+static const uint32_t kAirPodsPro3ProductID = 0x2027;
+static BOOL gHasB868FeatureContent = NO;
+static BOOL gBorrowEnabled = YES;
+static uint32_t gBorrowProductID = 0x201b;
 static NSMutableDictionary<NSString *, NSDictionary *> *gClassTable;
 static NSDictionary<NSNumber *, NSString *> *gDisplayNames;
 
@@ -70,6 +83,17 @@ static void ACLoadConfig(void) {
     }
     gScopeAll = [prefs[@"Scope"] isEqualToString:@"all"];
 
+    NSString *borrow = prefs[@"BorrowProfile"];
+    if ([borrow isEqualToString:@"off"]) {
+        gBorrowEnabled = NO;
+    } else if ([borrow isEqualToString:@"airpodspro2"]) {
+        gBorrowProductID = kAirPodsPro2ProductID;
+    } else if ([borrow isEqualToString:@"airpodspro3"]) {
+        gBorrowProductID = kAirPodsPro3ProductID;
+    } else {
+        gBorrowProductID = kAirPods4AncProductID;
+    }
+
     NSMutableDictionary *names = [NSMutableDictionary dictionary];
     [gConfig[@"DisplayNames"] enumerateKeysAndObjectsUsingBlock:^(NSString *key, NSString *name, BOOL *stop) {
         names[@(key.intValue)] = name;
@@ -77,9 +101,11 @@ static void ACLoadConfig(void) {
     gDisplayNames = names;
     gClassTable = [NSMutableDictionary dictionary];
 
-    AC_LOG(@"config: uarp=%lu scope=%@ enabled=%d uarpEnabled=%d process=%@",
+    AC_LOG(@"config: uarp=%lu scope=%@ enabled=%d uarpEnabled=%d borrow=%@ process=%@",
            (unsigned long)[gConfig[@"UARP"] count], gScopeAll ? @"all" : @"core",
-           gEnabled, gUARPEnabled, ACProcessName());
+           gEnabled, gUARPEnabled,
+           gBorrowEnabled ? [NSString stringWithFormat:@"0x%x", gBorrowProductID] : @"off",
+           ACProcessName());
 }
 
 #pragma mark - CoreUARP registration
@@ -212,7 +238,7 @@ static void ACRegisterUARPAccessories(void) {
     AC_LOG(@"registered %lu accessor(ies)", (unsigned long)registered);
 }
 
-#pragma mark - AirPods 5 -> AirPods 4 (ANC) feature-content borrowing (v0.4)
+#pragma mark - AirPods 5 -> borrowed feature content (v0.4)
 
 // HeadphoneDevice.allFeatureContents(productID:device:) is the single factory
 // behind HeadphoneDevice.featureContent and every UI that consumes it
@@ -221,18 +247,20 @@ static void ACRegisterUARPAccessories(void) {
 // devices fall back to the generic content. By feeding the factory the
 // AirPods 4 (ANC) PID we get the real B768FeatureContent object - no witness
 // table is faked and no B768 UI code is shipped in the tweak.
-static const uint32_t kAirPods5ProductIDs[] = { 0x2036, 0x2030, 0x2037, 0x2032 };
-static const uint32_t kAirPods4AncProductID = 0x201b;
-
+// Borrow targets available on iOS 26.x (class = accepted PIDs):
+//   B768 AirPods 4 / 4 (ANC)  : 0x2019, 0x201b  (closest form factor, default)
+//   B698 AirPods Pro 2        : 0x2014, 0x2024  (ANC + adaptive features)
+//   B788 AirPods Pro 3        : 0x2027, 0x2028  (richest, some rows unsupported)
+// There is no AirPods 3 FeatureContent class, and one device resolves to exactly
+// one content (featureContent is a singular getter), so profiles are exclusive.
 static id (*orig_allFeatureContents)(uint32_t productID, id device);
-static BOOL gHasB868FeatureContent = NO;
 
 static id AC_allFeatureContents(uint32_t productID, id device) {
-    if (!gHasB868FeatureContent) {
+    if (gBorrowEnabled && !gHasB868FeatureContent) {
         for (size_t i = 0; i < sizeof(kAirPods5ProductIDs) / sizeof(kAirPods5ProductIDs[0]); i++) {
             if (productID == kAirPods5ProductIDs[i]) {
-                AC_LOG(@"borrowing AirPods 4 (ANC) feature content for productID=0x%x", productID);
-                return orig_allFeatureContents(kAirPods4AncProductID, device);
+                AC_LOG(@"borrowing feature content 0x%x for productID=0x%x", gBorrowProductID, productID);
+                return orig_allFeatureContents(gBorrowProductID, device);
             }
         }
     }

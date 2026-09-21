@@ -470,5 +470,47 @@ ret
   正确的兼容层。AirPods 5 在旧版本的表现 ≈ AirPods 4 在同版本的基线。
 - <18 的版本连 `HeadphoneManager.framework` 都没有；若要再往下做（例如旧功能位、
   图片资产），那是独立项目，不属于 v0.4。
+
+### 11.16 借用目标可选化（BorrowProfile）与旧架构的 PID 门控
+
+**类 ↔ 型号映射**（反汇编各 `*FeatureContent.init?` 的接受 PID，26.6.2 与 27.0 一致）：
+
+| 类 | 接受 PID | 型号 |
+|---|---|---|
+| `B698FeatureContent` | 0x2014, 0x2024 | AirPods Pro 2 / Pro 2 (USB-C) |
+| `B768FeatureContent` | 0x2019, 0x201b | AirPods 4 / AirPods 4 (ANC) |
+| `B788FeatureContent` | 0x2027, 0x2028 | AirPods Pro 3 |
+| `B868FeatureContent` | 0x2036, 0x2030, 0x2037, 0x2032 | AirPods 5（仅 27.0） |
+| `B515dFeatureContent` | 0x202d | AirPods Max 2 |
+| `B494BFeatureContent` | 0x202f | （待定） |
+| `B518FeatureContent` | 0x2038 | A3577（仅 27.0） |
+
+结论：FeatureContent 链里**没有 AirPods 3 类**，「UI 用 AirPods 3」不可用；
+非 Pro 最接近的是 B768（AirPods 4）。且 `featureContent` 是单数 getter
+（工厂数组 → `first(where:)` 取第一个非空），一台设备只对应一个内容，
+所以「UI + 降噪」不能按类混搭，只能整机选一个 profile。
+
+因此 tweak 新增 pref `BorrowProfile`（默认 `airpods4anc`）：
+`airpods4anc`(B768/0x201b) / `airpodspro2`(B698/0x2014) /
+`airpodspro3`(B788/0x2027) / `off`。
+
+**旧架构（18.6.2 实测）的降噪门控是 PID 硬编码的**，因此可以在旧系统上单独补：
+
+- `HeadphoneConfigs`（`BTSDeviceConfigController`）：
+  - `adaptiveTransparencySpecifier`：0x2014/0x2024
+  - `addConversationDetectSpecifier`、`addAdaptiveVolumeSpecifier`、
+    `updateHearingProtectionSpecifiers`：0x2014/0x2024
+  - `loadAccessorySettings`：0x2019 + 0x2014/0x2024；`getModelName:`：0x201b
+  - `HPSListeningModeControl _handleListeningModeSetFailure:`：0x201b
+  - `BTSFitTestController`（阈值）、`HPSProductUtils getProductSpecificString:`、
+    `HPSBatteryStatusView getDeviceCaseIcon:`
+  - Swift 扩展 `conversationDetectSupported`：0x2014/0x2024
+- `HeadphoneManager`：`checkIsFindMyNetworkSupported`（0x2014/0x2024）、
+  `ReplayDevice.accessorySettingFeatureBitMask`（0x2014）、`CBProductIDIsAirPods/W3`
+
+即：18.x 上要让 AirPods 5 显示 Pro 级 ANC/自适应行，需要 hook 上述 PID 判定
+（约 6–8 个方法，且跨版本符号布局有差异）；UARP 抽象基类做不到
+（旧版只有 `AirPodsBud/Case/CaseUSB`，没有 Pro 层级）。该补丁列为后续项，
+不影响 26.x 的 profile 借用。
 - 因此 v0.4 的适用范围 = 主目标 iOS 26.6.2（及任何存在 FeatureContent 链的
   26.x/27 之前的版本）；其余版本保持 v0.3 行为，不回归。

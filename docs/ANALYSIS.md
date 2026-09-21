@@ -162,3 +162,20 @@
   CoreBluetooth / CoreUARP 这四个已抽取 dylib 中（直接调用扫描为 0）
 - 已将 `HeadphoneConfigs`、`MobileBluetooth`、`BluetoothSettings.bundle` 加入 DSC 抽取列表，
   下一步在它们中定位消费者；确认分派方式后再决定能否用「按 PID 处理」的保守 hook 实现
+
+### 11.5 消费者定位进展（未完成）
+
+对 7 个 dylib（HeadphoneManager、HeadphoneSettingsUI、HeadphoneConfigs、MobileBluetooth、
+BluetoothSettings.bundle、CoreBluetooth、CoreUARP）做了两类扫描，**均 0 命中**：
+
+- 直接调用工厂 `allFeatureContents(productID:device:)` 的 `bl`/`b`
+- 类型分派入口：`B768FeatureContentCMa` / `B868FeatureContentCMa`（`as?` 会调用的 metadata accessor）
+
+推论：消费者在尚未抽取的二进制中，或通过类型名/协议见证间接访问。下一步候选：
+
+- `HearingAidUIServer` / 听力相关框架
+- `headphonesd` 等用户态守护进程
+- 用 `ipsw dyld xref`（CI/macOS）对工厂地址做全缓存交叉引用
+- 同时检查 HeadphoneSettingsUI 自身的 `*FeatureProviding` 表（按型号→Provider 的选择逻辑）是否可安全扩展
+
+在定位并确认分派方式之前，v0.4 保持「未实现」，不做猜测性映射。

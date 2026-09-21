@@ -442,3 +442,25 @@ ret
 
 「深挖移植」（在 26.6.2 上复现 B868 特有 UI）仍是未决后续项：
 它需要 27.0 App/HeadphoneSettingsUI 的新类型，属于跨版本 UI 移植而非宏替换。
+
+### 11.15 跨版本适用性：没有 AirPods 4 的 iOS 怎么办
+
+用户提问「没有 AirPods 4 的版本怎么办」——实测结论：这套借用机制**只适用于 iOS 26+**，
+更老的版本不是「没有 B768」而是「没有 FeatureContent 链」，因此 hook 安全空转：
+
+| iOS | HeadphoneManager.framework | FeatureContent 链 | v0.4 hook 行为 |
+|---|---|---|---|
+| 15.6.1 | **不存在**（CI 日志 `image ... not found in cache`） | — | `dlsym` 失败 → 跳过 |
+| 16.6.1 | 不存在（同上） | — | 跳过 |
+| 17.7 | 不存在（同上） | — | 跳过 |
+| 18.6.2 | 存在（2MB） | **无**：`B768` 0 命中、`allFeatureContents` 0 命中；只有 `FeatureOptionSet`/`Replay_B698` 旧架构 | 跳过 |
+| 26.6.2 | 存在 | 有：`B768FeatureContent` 47 处、`allFeatureContents` 8 处 | 借用 AirPods 4 (ANC) |
+| 27.0 | 存在 | 有（+ `B868FeatureContent`） | 原生支持，跳过 |
+
+- iOS 18 上 AirPods 4 的设置页走的是**旧架构**（`FeatureOptionSet` 时代），
+  没有工厂/`featureContent` 可替换；因此「退而借用 B698/其他类」在这条链上不成立。
+- <18 的版本连 `HeadphoneManager.framework` 都没有，v0.3 的 UARP 注册与
+  显示名表是那些版本上仅有的兼容层；要为它们加 AirPods 5 设置 UI 属于另一个
+  独立项目（旧的 BluetoothSettings/HearingAid 路径）。
+- 因此 v0.4 的适用范围 = 主目标 iOS 26.6.2（及任何存在 FeatureContent 链的
+  26.x/27 之前的版本）；其余版本保持 v0.3 行为，不回归。

@@ -109,6 +109,9 @@ docs/ANALYSIS.md     # 分析报告（型号映射、hook 目标、风险）
   tweak 内不含 B768 实现代码）；注入范围含 `HeadphoneProxService` 与 Preferences；
   iOS 27+ 检测到 `B868FeatureContent` 原生支持时自动跳过。
   调用链证据见 `docs/ANALYSIS.md` §11.12–§11.14。
+  **适用范围 iOS 26+**：FeatureContent 链从 26 才有；15.6.1–18.6.2 上
+  `HeadphoneManager` 不存在或没有该链，hook 安全跳过、保持 v0.3 行为
+  （跨版本证据见 §11.15）。
 - **型号 ID 表**：A3439…A3533（A3531 通过 A3532 的备选型号覆盖）
 
 参考：Apple《Identify your AirPods》 <https://support.apple.com/en-us/109525>

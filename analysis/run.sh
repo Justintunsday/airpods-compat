@@ -77,6 +77,9 @@ for dsc in "${DSCS[@]}"; do
     "/System/Library/Frameworks/CoreBluetooth.framework/CoreBluetooth"
     "/System/Library/PrivateFrameworks/HeadphoneManager.framework/HeadphoneManager"
     "/System/Library/PrivateFrameworks/HeadphoneSettingsUI.framework/HeadphoneSettingsUI"
+    "/System/Library/PrivateFrameworks/HeadphoneConfigs.framework/HeadphoneConfigs"
+    "/System/Library/PrivateFrameworks/MobileBluetooth.framework/MobileBluetooth"
+    "/System/Library/PreferenceBundles/BluetoothSettings.bundle/BluetoothSettings"
   )
   mkdir -p "$b/dylibs"
   for img in "${IMAGES[@]}"; do

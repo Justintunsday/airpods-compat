@@ -99,8 +99,11 @@ docs/ANALYSIS.md     # 分析报告（型号映射、hook 目标、风险）
 ## 已知差异（iOS 26.6.2 相对 27.0）
 
 - **显示名**：`AirPods 5`、`AirPods 5 (Wireless Charging)`（27.0 位于 CoreBluetooth）
-- **UARP 配件类**：A3439/A3440/A3441/A3529/A3529USB/A3530USB/A3532/A3533
-- **Swift 功能类**：`B868FeatureContent`（`HeadphoneManager`，v0.4 计划）
+- **UARP 配件类**：A3440/A3441/A3529/A3529USB/A3530USB/A3532/A3533
+  （A3439、A3531 由备选型号覆盖）
+- **Swift 功能链**：`B868FeatureContent` 位于 `HeadphoneManager`；
+  `HeadphoneSettingsUI` 中另有 `B868FeatureProviding.swift` 字符串线索
+  （v0.4 计划；当前 deb 尚未实现）
 - **型号 ID 表**：A3439…A3533（A3531 通过 A3532 的备选型号覆盖）
 
 参考：Apple《Identify your AirPods》 <https://support.apple.com/en-us/109525>

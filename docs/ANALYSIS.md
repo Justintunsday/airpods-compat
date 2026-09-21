@@ -1,4 +1,4 @@
-# AirPods 5 → iOS 26.6.2 移植分析报告
+﻿# AirPods 5 → iOS 26.6.2 移植分析报告
 
 > 生成日期：2026-09-21 · 设备：iPhone17,3 (iPhone 16) · 源：iOS 27.0 (24A437) · 目标：iOS 26.6.2 (23G90)
 
@@ -6,7 +6,7 @@
 
 - **AirPods 5 整代（2026）在 iOS 26.6.2 上完全缺失支持**，iOS 27.0 首次完整引入。
 - 目标机与源机同为 iPhone 16，蓝牙芯片一致 → 属**纯用户态差异**（DSC + 系统资源），不需要内核/驱动移植。
-- 需要补齐的最小集合：**9 个 UARP 配件类 + 1 个 Swift 功能类 + 2 条显示名 + 8 个型号 ID 表项**（详见 §5）。
+- 已定位的缺口包括 **AirPods 5 UARP 配件类、HeadphoneManager 的 Swift 功能类、显示名和型号 ID 表项**（详见 §5）；这些缺口不等于已证明的完整移植清单。
 - 路径：rootless 越狱包（Theos）+ 数据驱动型号表；系统卷受 SSV 保护，只能运行时注入，不能替换 DSC。
 
 ## 2. 型号映射（Apple KB109525）
@@ -34,7 +34,7 @@
 5. 证据样本：
    - `dyld_shared_cache_arm64e.50`：`…A3454 ∥ A3532 ∥ A3531…`，邻接 `AirPods Pro 2 (USB-C)`、`Mapped Analytics Event/Payload`
    - `dyld_shared_cache_arm64e.26.dyldreadonly`：类名 `UARPSupportedAccessoryA3532`
-   - iOS 27.0：显示名 `AirPods 5`、`AirPods 5 (Wireless Charging)`；`B868FeatureProviding`
+   - iOS 27.0：显示名 `AirPods 5`、`AirPods 5 (Wireless Charging)`；`B868FeatureContent` 与 `B868FeatureProviding.swift` 字符串
 
 ## 4. 两版本共有/独有概览
 
@@ -44,13 +44,13 @@
 | `UARPSupportedAccessoryA3063/64/65`（Pro 3） | ✅ | ✅ |
 | `B768FeatureProviding`、`AirPods 4` | ✅ | ✅ |
 | **AirPods 5 全部型号/类/显示名** | ✅ | ❌ |
-| **`B868FeatureProviding`** | ✅ | ❌ |
+| **`B868FeatureContent`（HeadphoneManager）** | ✅ | ❌ |
 
 ## 5. 26.6.2 缺失清单（移植目标）
 
-- **UARP 配件类（9）**：`A3439`、`A3440`、`A3441`、`A3529`、`A3529USB`、`A3530USB`、`A3532`、`A3533`
-  （注：`A3531` 无独立类，通过产品 ID 表引用）
-- **Swift 功能类**：`B868FeatureProviding`（B768=AirPods 4 的同位类）
+- **UARP 配件类（7）**：`A3440`、`A3441`、`A3529`、`A3529USB`、`A3530USB`、`A3532`、`A3533`
+  （注：`A3439`、`A3531` 没有独立类，分别由 A3440、A3532 的备选型号覆盖）
+- **Swift 功能类**：`B868FeatureContent`（HeadphoneManager；B768 是 AirPods 4 的同位类）；iOS 27 的 HeadphoneSettingsUI 另有 `B868FeatureProviding.swift` 字符串
 - **显示名**：`AirPods 5`、`AirPods 5 (Wireless Charging)`
 - **型号 ID 表**：`A3439`、`A3440`、`A3441`、`A3529`、`A3530`、`A3531`、`A3532`、`A3533`
 
@@ -88,8 +88,13 @@
    `+mobileAssetAppleModelNumber` / `+alternativeAppleModelNumbers`，再注册进 manager（已实现于 `tweak/Tweak.xm`）
 2. **CoreBluetooth**：hook `-[CBDevice productName]` 与
    `+[CBAccessoryLogging getProductNameFromProductID:]`，按 PID 返回 "AirPods 5" 等名称（已实现）
-3. **HeadphoneManager**：`B868FeatureContent.productIDs`（Swift，待 v0.3；需 hook
-   `HeadphoneDevice.allFeatureContents(productID:device:)` 或其调用点）
+3. **HeadphoneManager / HeadphoneSettingsUI**（待 v0.4）：iOS 27 抽取的 dylib 中，
+   `B868FeatureContent` 位于前者，`B868FeatureProviding.swift` 位于后者。
+   iOS 26.6.2 的 `HeadphoneDevice.allFeatureContents(productID:device:)` 已存在，
+   但没有 `B868FeatureContent`。需要先反汇编对比两版该工厂函数的调用链，
+   并确定 Swift 协议见证表与 ABI，才能接入新的特性对象。
+   不能仅创建同名 Objective-C 类，或把 AirPods 5 的 productID 映射到 AirPods 4 的
+   `B768FeatureContent`：这两种做法都不能证明返回了正确的 AirPods 5 特性集。
 4. 型号表外置：`tweak/layout/Library/Application Support/AirPodsCompat/AirPodsCompatModels.plist`
 
 ## 8. 影响面（待 hook 定位后确认）
@@ -101,7 +106,7 @@
 ## 9. 风险与限制
 
 - **SSV**：iOS 15+ 系统卷签名保护 → 不能替换 DSC/系统二进制，必须运行时注入
-- **Swift 类**（`B868FeatureProviding`）不能直接 `%hook`，需 hook 其调用点或桥接层
+- **Swift 功能链**不能仅靠同名 Objective-C 类补齐，需确认工厂函数调用点、Swift ABI 和协议见证表
 - **bluetoothd 注入**：rootless 注入器需支持系统守护进程；否则改从 UI/框架层入手
 - **固件更新链路**（UARP 配件定义）需真机回归验证
 - 越狱工具与 iOS 版本匹配性（Dopamine/roothide 的可用范围）
@@ -116,5 +121,44 @@
 - [x] tweak v0.2：UARP 配件动态注册 + CoreBluetooth 名称 hook（CI 编译通过）
 - [x] 控制 App 未签名 ipa（CI 编译通过）
 - [ ] 真机验证：安装 deb → 配对 AirPods 5 → 名称/识别/设置页
-- [ ] v0.3：HeadphoneManager `B868FeatureContent` 特性集（Swift，hook 调用点）
+- [ ] v0.4：HeadphoneManager `B868FeatureContent` 与 HeadphoneSettingsUI
+      `B868FeatureProviding` 特性链（先确认 Swift 工厂函数调用链及 ABI）
 - [ ] 真机回归：固件更新、电量、手势、ANC
+
+## 11. v0.4 研究记录（Swift 特性链）
+
+目标：把 iOS 27 的 `B868FeatureContent` 特性链移植到 26.6.2。结论：**暂不实现**，证据如下。
+
+### 11.1 工厂函数结构（两版一致）
+
+`HeadphoneDevice.allFeatureContents(productID:device:)` 固定构造 10 元素数组：
+
+- 元素 0/1：**硬编码** `B698FeatureContent`、`B768FeatureContent`（直接 `init` + 写 existential）
+- 元素 2..9：8 个闭包 `AHyXEfU_ … U6`，每个闭包 = 申请对象 + 调自身 failable init + 写 existential
+- 27.0 闭包映射：`U_ = B788`、`U0 = B494B`、`U1 = B868`、`U4 = B518`、`U5 = B515d`、`U2/U3/U6 = 占位`
+- **匹配逻辑在各自类的 failable init 内部**（init 返回 nil 表示不适用），工厂不做筛选
+
+### 11.2 接受的 productID（反汇编实测）
+
+| 类 | iOS | 接受集合 |
+|---|---|---|
+| `B868FeatureContent` | 27.0 | `{0x2036, 0x2030, 0x2037, 0x2032}`（AirPods 5 / 无线充电版四个耳机 PID） |
+| `B768FeatureContent` | 27.0 | `{0x2019, 0x201b}` |
+| `B768FeatureContent` | 26.6.2 | `{0x2019, 0x201b}` |
+
+类内部只存两个字段：`productIDs`（offset 0x10，存的就是该 PID 本身）与 `device`（offset 0x18）。
+**特性语义不在字段里，而在类的「类型身份」上**（消费者按类型分派）。
+
+### 11.3 existential / 见证表 ABI（两版相同）
+
+- 容器：5 字（`any FeatureContentType`）：`[0]=对象指针`、`[3]=type metadata`、`[4]=witness table`
+- 见证表布局：`[0]=conformance descriptor(…AAMc)`、`[1]=productIDs.vgTW`、`[2]=device.vgTW`、`[3]=init(cfC).TW`
+- 协议只有 3 个需求，26.6.2 与 27.0 完全一致 → **ABI 不是障碍**
+
+### 11.4 阻塞点与下一步
+
+- 动态 ObjC 类**无法**提供 Swift witness table；伪造见证表或复用 B768 的 WP 都等于「把 AirPods 5 当成 AirPods 4」，特性可能错误 → 不做
+- 消费者（读取 `allFeatureContents` 并按类型分派的一方）**不在** HeadphoneManager / HeadphoneSettingsUI /
+  CoreBluetooth / CoreUARP 这四个已抽取 dylib 中（直接调用扫描为 0）
+- 已将 `HeadphoneConfigs`、`MobileBluetooth`、`BluetoothSettings.bundle` 加入 DSC 抽取列表，
+  下一步在它们中定位消费者；确认分派方式后再决定能否用「按 PID 处理」的保守 hook 实现

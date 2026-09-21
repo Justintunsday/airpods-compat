@@ -66,6 +66,8 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: airpodscompat-deb
-          path: dist/*.deb
+          path: |
+            dist/*.deb
+            dist/INSTALL.txt
           if-no-files-found: error
           retention-days: 30

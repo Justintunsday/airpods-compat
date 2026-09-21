@@ -110,9 +110,11 @@
 
 - [x] IPSW 解包、AEA 解密、DSC 定位
 - [x] 型号映射 + 缺失清单（字节级 diff）
-- [x] GitHub Actions DSC 分析管线（远程抽 DSC + `ipsw dyld` 查询）
+- [x] GitHub Actions DSC 分析管线（远程抽 DSC + 定向查询 + dylib 抽取）
 - [x] hook 目标定位：CoreUARP / CoreBluetooth / HeadphoneManager
-- [ ] 提取 UARP 类方法表与 CoreBluetooth 名称映射实现
-- [ ] tweak v0.1：注册型号 ID + 显示名（最小可见效果）
-- [ ] 控制 App + Actions 编译
-- [ ] 真机回归：配对、设置页、固件更新、电量
+- [x] 反汇编提取数值 productID + 注册 API
+- [x] tweak v0.2：UARP 配件动态注册 + CoreBluetooth 名称 hook（CI 编译通过）
+- [x] 控制 App 未签名 ipa（CI 编译通过）
+- [ ] 真机验证：安装 deb → 配对 AirPods 5 → 名称/识别/设置页
+- [ ] v0.3：HeadphoneManager `B868FeatureContent` 特性集（Swift，hook 调用点）
+- [ ] 真机回归：固件更新、电量、手势、ANC

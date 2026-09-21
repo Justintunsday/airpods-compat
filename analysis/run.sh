@@ -58,57 +58,21 @@ for dsc in "${DSCS[@]}"; do
     "A3439" \
     >"$b/str_hits.txt" 2>&1
 
-  # note: `symaddr --all` builds a full a2s symbol cache and takes 30min+ on a
-  # split cache - string search above already surfaces the Swift/ObjC symbol
-  # names we need, so keep this step fast.
+  # note: `symaddr --all` / full-cache `objc` dumps build a symbol cache and
+  # take 30min+ on a split cache, so stay targeted here.
 
-  # targeted per-image queries only (full-cache dumps are too slow/large)
   IMAGES=(
     "/System/Library/PrivateFrameworks/CoreUARP.framework/CoreUARP"
     "/System/Library/Frameworks/CoreBluetooth.framework/CoreBluetooth"
     "/System/Library/PrivateFrameworks/HeadphoneManager.framework/HeadphoneManager"
     "/System/Library/PrivateFrameworks/HeadphoneSettingsUI.framework/HeadphoneSettingsUI"
   )
+  mkdir -p "$b/dylibs"
   for img in "${IMAGES[@]}"; do
     name="$(basename "$img")"
-    run_to 600 ipsw dyld macho "$dsc" "$img" --objc --symbols --strings >>"$b/macho_$name.txt" 2>&1
+    run_to 600 ipsw dyld macho "$dsc" "$img" --objc --symbols --strings --extract --output "$b/dylibs" >>"$b/macho_$name.txt" 2>&1
     run_to 120 ipsw dyld image "$dsc" "$img" >"$b/image_$name.txt" 2>&1
   done
-
-  # disassemble the constant-returning helpers we need for the port
-  dis() { # dis <dump-file> <symbol-grep> <out-file> [label]
-    local dump="$1" pat="$2" out="$3"
-    local addr
-    addr="$(grep -F -- "$pat" "$dump" | grep -v 'vpMV\|TW$\|Tj$\|Tq$\|AAMc\|AAWP\|CMo\|CMn\|CMu\|CN$\|CMa\|CMF\|CMm' | head -1 | awk '{print $1}' | tr -d ':')"
-    [[ -n "$addr" ]] || return 0
-    {
-      echo "### $pat @ $addr"
-      run_to 90 ipsw dyld disass "$dsc" --vaddr "$addr"
-    } >>"$out" 2>&1
-  }
-
-  : >"$b/disass_uarp.txt"
-  for sym in \
-    "UARPSupportedAccessoryA3440 productID" \
-    "UARPSupportedAccessoryA3441 productID" \
-    "UARPSupportedAccessoryA3529 productID" \
-    "UARPSupportedAccessoryA3529USB productID" \
-    "UARPSupportedAccessoryA3530USB productID" \
-    "UARPSupportedAccessoryA3532 productID" \
-    "UARPSupportedAccessoryA3533 productID" \
-    "UARPSupportedAccessoryA3532 appleModelNumber" \
-    "UARPSupportedAccessoryA3533 appleModelNumber" \
-    "UARPSupportedAccessoryAirPodsBud productID"; do
-    dis "$b/macho_CoreUARP.txt" "+[${sym}]" "$b/disass_uarp.txt"
-  done
-
-  : >"$b/disass_swift.txt"
-  dis "$b/macho_HeadphoneManager.txt" "_s16HeadphoneManager18B868FeatureContentC9productIDs6UInt32Vvg" "$b/disass_swift.txt"
-  dis "$b/macho_HeadphoneManager.txt" "_s16HeadphoneManager18B868FeatureContentC2id15headphoneDeviceACSgs6UInt32V_AA0aH0CtcfC" "$b/disass_swift.txt"
-  dis "$b/macho_HeadphoneManager.txt" "_s16HeadphoneManager0A6DeviceC18allFeatureContents9productID6deviceSayAA0aE11ContentType_pSgGSo09CBProductH0V_ACtFZ" "$b/disass_swift.txt"
-
-  : >"$b/disass_cb.txt"
-  dis "$b/macho_CoreBluetooth.txt" "_CBProductIDToNSLocalizedProductNameString" "$b/disass_cb.txt"
 done
 
 echo "==> done"

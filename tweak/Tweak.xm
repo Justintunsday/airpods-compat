@@ -136,25 +136,24 @@ static Class ACCreateClassForModel(NSDictionary *model, Class base, NSUInteger i
         : [NSString stringWithFormat:@"AirPodsCompat_%@_b%lu", model[@"model"], (unsigned long)index];
 
     Class cls = NSClassFromString(clsName);
-    if (cls) {
-        return cls;
-    }
-
-    cls = objc_allocateClassPair(base, clsName.UTF8String, 0);
     if (!cls) {
-        return Nil;
+        cls = objc_allocateClassPair(base, clsName.UTF8String, 0);
+        if (!cls) {
+            return Nil;
+        }
+        Class meta = object_getClass(cls);
+        class_addMethod(meta, sel_registerName("productID"), (IMP)AC_productID, "I@:");
+        class_addMethod(meta, sel_registerName("appleModelNumber"), (IMP)AC_appleModelNumber, "@@:");
+        class_addMethod(meta, sel_registerName("mobileAssetAppleModelNumber"), (IMP)AC_mobileAssetAppleModelNumber, "@@:");
+        class_addMethod(meta, sel_registerName("alternativeAppleModelNumbers"), (IMP)AC_alternativeAppleModelNumbers, "@@:");
+        class_addMethod(cls, sel_registerName("appleModelNumber"), (IMP)ACInstModelNumber, "@@:");
+        class_addMethod(cls, sel_registerName("identifier"), (IMP)ACInstIdentifier, "@@:");
+        class_addMethod(cls, sel_registerName("mobileAssetAppleModelNumber"), (IMP)ACInstModelNumber, "@@:");
+        class_addMethod(cls, sel_registerName("alternativeAppleModelNumbers"), (IMP)ACInstAlternativeModelNumbers, "@@:");
+        objc_registerClassPair(cls);
     }
-    Class meta = object_getClass(cls);
-    class_addMethod(meta, sel_registerName("productID"), (IMP)AC_productID, "I@:");
-    class_addMethod(meta, sel_registerName("appleModelNumber"), (IMP)AC_appleModelNumber, "@@:");
-    class_addMethod(meta, sel_registerName("mobileAssetAppleModelNumber"), (IMP)AC_mobileAssetAppleModelNumber, "@@:");
-    class_addMethod(meta, sel_registerName("alternativeAppleModelNumbers"), (IMP)AC_alternativeAppleModelNumbers, "@@:");
-    class_addMethod(cls, sel_registerName("appleModelNumber"), (IMP)ACInstModelNumber, "@@:");
-    class_addMethod(cls, sel_registerName("identifier"), (IMP)ACInstIdentifier, "@@:");
-    class_addMethod(cls, sel_registerName("mobileAssetAppleModelNumber"), (IMP)ACInstModelNumber, "@@:");
-    class_addMethod(cls, sel_registerName("alternativeAppleModelNumbers"), (IMP)ACInstAlternativeModelNumbers, "@@:");
+    // always (re)bind the table: preexisting classes must resolve too
     gClassTable[clsName] = model;
-    objc_registerClassPair(cls);
     return cls;
 }
 

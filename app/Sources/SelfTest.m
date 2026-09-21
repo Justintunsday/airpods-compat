@@ -211,10 +211,11 @@ static void ACRunRegistrationDryRun(NSMutableString *out) {
             class_addMethod(cls, NSSelectorFromString(@"identifier"), (IMP)ACDryInstIdentifier, "@@:");
             class_addMethod(cls, NSSelectorFromString(@"mobileAssetAppleModelNumber"), (IMP)ACDryInstMobileAssetModelNumber, "@@:");
             class_addMethod(cls, NSSelectorFromString(@"alternativeAppleModelNumbers"), (IMP)ACDryInstAlternativeModelNumbers, "@@:");
-            gDryRunTable[clsName] = model;
             objc_registerClassPair(cls);
             createdNow++;
         }
+        // always (re)bind the table: preexisting classes must resolve too
+        gDryRunTable[clsName] = model;
 
         id accessory = ((id (*)(id, SEL))objc_msgSend)((id)[cls alloc], NSSelectorFromString(@"init"));
         if (!accessory) {

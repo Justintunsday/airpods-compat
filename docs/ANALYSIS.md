@@ -280,3 +280,26 @@ witness table、不加猜测性 hook。转入第 3 项：真机验证通用设�
 
 工具沉淀（可复用）：`dsc_read.py`（DSC 按地址读取）、`find_refs.py`（ADRP/ADD 模式扫描）、
 `find_callers.py`（b/bl 编码扫描，含正反例自检）、`disass_swift.py`、`dump_feature_closures.py`。
+
+### 11.11 模拟器运行时路线（无真机时的替代）也走不通
+
+在 CI 的 macOS runner 上收集了全部 iOS 模拟器运行时（18.5/18.6/26.0.1/26.1/26.2）并分析：
+
+- `HeadphoneManager` 在运行时里是 **stub**：`__TEXT` 仅 0x1000、`__text` size = 0，
+  `nm` 只有 `_HeadphoneManagerVersionString/Number` 两个符号
+- 运行时根的 `System/Library/Caches/com.apple.dyld/` 与 `System/Library/dyld/` 均为空
+  （模拟器真实代码不在可拷贝的路径里）
+
+因此「用模拟器二进制定位 UI 消费者」也不可行。当前可用的验证/分析手段已全部尝试：
+
+| 手段 | 结果 |
+|---|---|
+| `ipsw dyld xref`（设备 DSC） | WIP，60min+ 不可用（§11.9） |
+| 抽取 dylib 的 fixup/vtable | 抽取时 rebase 被清零（§11.10） |
+| 自研 DSC 读取 + 多种 fixup 解码 | CMf=0（惰性元数据），窗口内未命中（§11.10） |
+| 模拟器运行时二进制 | 全部是 stub（§11.11） |
+| 真机验收 | 暂无可用设备 |
+
+结论：v0.4 的静态定位与真机验证目前都缺少可用手段；保持未实现、不做猜测性实现。
+可选项：(a) 收尾归档并打 tag；(b) 投入实现完整 arm64e chained fixups 解码器（独立研究分支）；
+(c) 之后有真机时再验证与推进。

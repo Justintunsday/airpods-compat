@@ -29,6 +29,18 @@
 > 找不到时自动从 `UARPSupportedAccessoryAirPodsBud/Case/CaseUSB` 的具体子类里挑一个。
 > `HeadphoneManager` 仅新系统有，老系统走 UARP + CoreBluetooth 名称链路。
 
+## 全型号支持
+
+型号表由 `tools/extract_airpods_models.py` 从 iOS 27 CoreUARP 自动提取
+（`models/airpods.json` → tweak 的 plist + App 内 `Models.json`），共 **33 个配件类**：
+
+- AirPods 1/2/3/4/4-ANC/5（含无线充电版）、AirPods Pro 1/2/3、AirPods Max 1/2
+- 各代充电盒（含 USB / MagSafe / 无线充电变体）
+- 同族的 Beats 蓝牙配件（自动识别到的 0x2xxx/0x1xxx 产品 ID 一并注册）
+
+tweak 在运行时**只注册本机缺失的型号**：iOS 27 原生已有的会自动跳过，
+老系统则补齐各自的缺口（含备选型号，如 A3532↔A3531）。
+
 ## 已知差异（来自 DSC 字符串/类名 diff）
 
 iOS 26.6.2 相对 iOS 27.0 缺少的 AirPods 5 相关项：

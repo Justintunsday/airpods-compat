@@ -211,3 +211,32 @@ BluetoothSettings.bundle、CoreBluetooth、CoreUARP）做了两类扫描，**均
   不引用类符号，"0 命中"不能排除关系；工厂消费者仍在已抽取集合之外
 - 已把 `Preferences.app`、`BluetoothManager`、`HeadphoneProxService`、`HearingAid`、
   `headphonesd`、`HearingAidUIServer` 加入 DSC 抽取候选，下一步在这些二进制里找工厂调用方
+
+### 11.8 扫描工具纠错与已定位的调用链（重要）
+
+**工具缺陷**：`find_callers.py` 原先用线性反汇编扫描 `bl/b`，而 `__TEXT` 段
+起点并非指令边界，导致解码失步、全库 0 命中。§11.4/§11.6 中"直接调用为 0"的
+排查结论因此**不可信**。已改为**指令编码模式扫描**（不解码，对数据岛免疫），
+并用正例/反例自检（正例：`B768FeatureContentCMa` 应命中 2 处；反例：随机地址 0 处）。
+
+**已定位的调用链**（修复后重扫 9 个 dylib）：
+
+- `allFeatureContents(productID:device:)` 的**唯一**调用方 = `HeadphoneDevice.featureContent`
+  属性 getter（27.0 `0x2027144c0`，26.6.2 `0x1dcbc0744`）
+- getter 内部还有私有缓存 `_featureContent`（`…15_featureContent33_B2EB…vg`）与
+  `first(where:)` 闭包；ObjC 层无暴露（纯 Swift vtable 分派）
+- 依赖收敛：抽取到的 9 个 dylib 中只有 **BluetoothSettings / HeadphoneConfigs /
+  HeadphoneSettingsUI** 链接 `HeadphoneManager` → UI 消费者就在这三者之内
+
+**当前静态边界**：getter 的跨模块调用走 Swift 类 vtable（`ldr xN,[xMetadata,#slot]; blr`），
+不产生 `bl` 目标；协议描述符相对指针解析结果每个版本的 6~7 个 UI 一致性都收敛到同一地址
+（自洽），但其为奇数地址、且在三个消费者 dylib 中未发现 ADRP/ADD 引用（可能经 GOT/链式
+fixup 间接）。`ipsw macho info -u` 对抽取出的 dylib 返回 "no fixups"，暂不可用。
+
+**下一步（按性价比排序）**：
+
+1. 真机并行验证：26.6.2 + 现有 deb，观察 AirPods 5 是否已有通用设置页
+   （`DefaultFeatureContentInternal` 回退在所有版本存在）→ 决定 v0.4 的真实收益
+2. CI 上用 `ipsw dyld xref`（macOS，处理完整缓存 fixup）对以下地址做全缓存交叉引用：
+   `HeadphoneDevice.featureContent` getter（两版各一）与 UI 协议描述符地址
+3. 或自行解析 chained fixups，定位 vtable 槽位后反查消费者

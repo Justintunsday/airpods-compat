@@ -49,7 +49,7 @@ enum AirPodsAdvertisementParser {
 }
 
 /// Maps BLE model IDs to the display names extracted from CoreUARP.
-enum AirPodsModelCatalog {
+struct AirPodsModelCatalog {
     private struct Table: Decodable {
         struct Model: Decodable {
             let productID: Int?

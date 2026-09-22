@@ -57,6 +57,12 @@ struct ContentView: View {
                         Label("运行自检（无需越狱）", systemImage: "stethoscope")
                     }
 
+                    NavigationLink {
+                        DeviceProbeView()
+                    } label: {
+                        Label("设备探测（连接检测）", systemImage: "dot.radiowaves.left.and.right")
+                    }
+
                     Button("重新加载状态") { status = describeState() }
                     if !status.isEmpty {
                         Text(status).font(.footnote).foregroundColor(.secondary)

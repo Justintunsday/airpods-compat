@@ -20,6 +20,8 @@ targets:
         CURRENT_PROJECT_VERSION: "1"
         INFOPLIST_KEY_CFBundleDisplayName: AirPods Compat
         GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription: 用于探测附近 AirPods 与已连接设备（仅本地显示，不上传）
+        INFOPLIST_KEY_NSBluetoothPeripheralUsageDescription: 用于探测附近 AirPods 与已连接设备（仅本地显示，不上传）
         INFOPLIST_KEY_UILaunchScreen_Generation: YES
         INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents: YES
         TARGETED_DEVICE_FAMILY: "1"

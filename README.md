@@ -89,6 +89,13 @@ docs/ANALYSIS.md     # 分析报告（型号映射、hook 目标、风险）
 **2. 非越狱自检（真机）**：App →「诊断 → 运行自检」输出本机缺失型号、
 `HeadphoneManager` 类存在性、动态注册干跑结果，可复制报告。
 
+**3. 设备探测（真机）**：App →「诊断 → 设备探测」列出：
+- 音频路由（AVAudioSession）中的已连接设备（AirPods 会显示名称/端口）
+- 附近 BLE 广播中解析出的 Apple 近场配对型号 ID（0x2036/0x2030/0x2037/0x2032
+  会高亮为 AirPods 5）
+- 私有 `BluetoothManager` 的已连接设备列表（尽力而为，失败不影响其他区块）
+可一键复制探测报告。
+
 **3. 构建校验**：两个 deb 的 `Architecture` 与安装路径（`var/jb` vs `Library`）均在 CI 生成。
 
 ## 分析流程

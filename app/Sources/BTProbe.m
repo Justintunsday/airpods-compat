@@ -54,7 +54,7 @@ NSString *ACProbeBluetoothStatus(void) {
     return gProbeStatus;
 }
 
-static void ACProbeAppendDevices(NSArray *devices, NSMutableArray<NSDictionary *> *out) {
+static void ACProbeAppendDevices(NSArray *devices, NSMutableArray<NSDictionary *> *out, BOOL fromConnectedList) {
     if (![devices isKindOfClass:[NSArray class]]) {
         return;
     }
@@ -70,7 +70,7 @@ static void ACProbeAppendDevices(NSArray *devices, NSMutableArray<NSDictionary *
         NSNumber *vendorID = ACProbeNumber(device, @[ @"vendorId", @"vendorID" ]);
         if (vendorID) entry[@"vendorID"] = vendorID;
         NSNumber *connected = ACProbeNumber(device, @[ @"connected", @"isConnected" ]);
-        if (connected) entry[@"connected"] = connected;
+        entry[@"connected"] = fromConnectedList ? @YES : (connected ?: @NO);
         NSNumber *paired = ACProbeNumber(device, @[ @"paired", @"isPaired" ]);
         if (paired) entry[@"paired"] = paired;
         [out addObject:entry];
@@ -109,14 +109,14 @@ NSArray<NSDictionary<NSString *, id> *> *ACProbeBluetoothDevices(void) {
         NSUInteger before = out.count;
         SEL connectedSel = NSSelectorFromString(@"connectedDevices");
         if ([manager respondsToSelector:connectedSel]) {
-            ACProbeAppendDevices(((id (*)(id, SEL))objc_msgSend)(manager, connectedSel), out);
+            ACProbeAppendDevices(((id (*)(id, SEL))objc_msgSend)(manager, connectedSel), out, YES);
         }
         NSUInteger connectedCount = out.count - before;
 
         SEL pairedSel = NSSelectorFromString(@"pairedDevices");
         if ([manager respondsToSelector:pairedSel]) {
             NSMutableArray *paired = [NSMutableArray array];
-            ACProbeAppendDevices(((id (*)(id, SEL))objc_msgSend)(manager, pairedSel), paired);
+            ACProbeAppendDevices(((id (*)(id, SEL))objc_msgSend)(manager, pairedSel), paired, NO);
             // keep paired-only entries for context, connected first
             for (NSDictionary *entry in paired) {
                 NSString *address = entry[@"address"];

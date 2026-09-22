@@ -22,9 +22,15 @@ struct DeviceProbeView: View {
                 if let error = probe.lastError {
                     Text(error).foregroundColor(.red)
                 }
-                if probe.detectedAirPods5 {
-                    Label("已探测到 AirPods 5", systemImage: "checkmark.seal.fill")
+                if probe.connectedAirPods5 {
+                    Label("BluetoothManager 报告 AirPods 5 已连接", systemImage: "checkmark.seal.fill")
                         .foregroundColor(.green)
+                }
+                if probe.pairedAirPods5 {
+                    Label("已配对列表中有 AirPods 5", systemImage: "airpods")
+                }
+                if probe.nearbyAirPods5 {
+                    Label("附近发现 AirPods 5 配对广播", systemImage: "dot.radiowaves.left.and.right")
                 }
             }
 

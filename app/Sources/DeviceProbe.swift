@@ -80,9 +80,20 @@ final class DeviceProbe: NSObject, ObservableObject {
     private var discovered: [UUID: NearbyBLEDevice] = [:]
     private let catalog = AirPodsModelCatalog.shared
 
-    var detectedAirPods5: Bool {
+    var nearbyAirPods5: Bool {
         nearby.contains { $0.isAirPods5 }
-            || connectedDevices.contains { $0.modelName(catalog: catalog)?.hasPrefix("AirPods 5") ?? false }
+    }
+
+    var connectedAirPods5: Bool {
+        connectedDevices.contains {
+            $0.connected && ($0.modelName(catalog: catalog)?.hasPrefix("AirPods 5") ?? false)
+        }
+    }
+
+    var pairedAirPods5: Bool {
+        connectedDevices.contains {
+            !$0.connected && ($0.modelName(catalog: catalog)?.hasPrefix("AirPods 5") ?? false)
+        }
     }
 
     func startScan() {
@@ -149,6 +160,7 @@ final class DeviceProbe: NSObject, ObservableObject {
         lines.append("")
         lines.append("[已连接/已配对设备（私有 BluetoothManager）]")
         lines.append("  状态：\(bluetoothProbeStatus ?? "未知")")
+        lines.append("  AirPods 5：连接=\(connectedAirPods5) 已配对=\(pairedAirPods5) 附近广播=\(nearbyAirPods5)")
         for device in connectedDevices {
             lines.append("  \(device.describe(catalog: catalog))")
         }

@@ -17,14 +17,14 @@ final class DeviceProbeTests: XCTestCase {
     /// Real proximity-pairing layout: Apple company ID, type 0x07, then
     /// 0x01 prefix followed by the big-endian model ID.
     func testProximityPairingExtractsModelID() {
-        let advertisement = AirPodsAdvertisementParser.parse(manufacturerData: data("4c00070501203620"))
+        let advertisement = AirPodsAdvertisementParser.parse(manufacturerData: data("4c00070401203620"))
         XCTAssertEqual(advertisement.modelID, 0x2036)
-        XCTAssertEqual(advertisement.rawManufacturerData, "4c00070501203620")
+        XCTAssertEqual(advertisement.rawManufacturerData, "4c00070401203620")
     }
 
     func testAllAirPods5ProductIDsParse() {
         for pid: UInt16 in [0x2036, 0x2030, 0x2037, 0x2032] {
-            let hex = String(format: "4c00070501%04x20", pid)
+            let hex = String(format: "4c00070401%04x20", pid)
             XCTAssertEqual(AirPodsAdvertisementParser.modelID(fromManufacturerData: data(hex)), pid,
                            "pid \(pid) should parse")
         }
@@ -38,10 +38,11 @@ final class DeviceProbeTests: XCTestCase {
         XCTAssertNil(AirPodsAdvertisementParser.modelID(fromManufacturerData: Data()))
         XCTAssertNil(AirPodsAdvertisementParser.modelID(fromManufacturerData: data("4c00")))
         XCTAssertNil(AirPodsAdvertisementParser.modelID(fromManufacturerData: data("4c0007190120")))
+        XCTAssertNil(AirPodsAdvertisementParser.modelID(fromManufacturerData: data("4c000705012036")))
     }
 
     func testTLVWalkSkipsOtherTypes() {
-        let advertisement = AirPodsAdvertisementParser.parse(manufacturerData: data("4c001203010203070501203a20"))
+        let advertisement = AirPodsAdvertisementParser.parse(manufacturerData: data("4c001203010203070401203a20"))
         XCTAssertEqual(advertisement.modelID, 0x203a)
     }
 

@@ -9,8 +9,8 @@
 //   * abstract base classes are preferred (we must not inherit a sibling
 //     model's concrete capabilities); concrete classes are only fallbacks.
 //   * crash guard: a marker file is written before registration and removed
-//     after. If it survives to the next launch, registration is skipped for
-//     that launch so a bad model can never boot-loop the device.
+//     after. Each accessory daemon has its own marker. A marker left by a
+//     crash disables registration until it is removed explicitly.
 //
 // Hook targets (from the iOS 27.0 CoreUARP disassembly):
 //   -[UARPSupportedAccessoryManager addSupportedAccessory:]
@@ -32,6 +32,9 @@
 #import <objc/runtime.h>
 #import <substrate.h>
 #import <dlfcn.h>
+#import <fcntl.h>
+#import <errno.h>
+#import <unistd.h>
 
 #if __has_include(<rootless.h>)
 #import <rootless.h>
@@ -45,7 +48,6 @@ static NSDictionary *gConfig;
 static BOOL gEnabled = YES;
 static BOOL gUARPEnabled = YES;
 static BOOL gScopeAll = NO;
-static BOOL gRegistrationCrashed = NO;
 
 // Feature-content borrowing (v0.4, iOS 26.x only - see ACInstallFeatureContentBorrowing):
 // borrow targets available in the FeatureContent chain and their accepted PIDs.
@@ -329,14 +331,6 @@ static void ACInstallFeatureContentBorrowing(void) {
 
         ACInstallFeatureContentBorrowing();
 
-        NSString *guard = ACSupportPath(@".registration-in-progress");
-        NSFileManager *fm = [NSFileManager defaultManager];
-        if ([fm fileExistsAtPath:guard]) {
-            gRegistrationCrashed = YES;
-            [fm removeItemAtPath:guard error:nil];
-            AC_LOG(@"previous registration attempt did not finish - skipping registration this launch");
-        }
-
         if (!gUARPEnabled) {
             AC_LOG(@"UARP registration disabled via prefs");
             return;
@@ -345,13 +339,25 @@ static void ACInstallFeatureContentBorrowing(void) {
             AC_LOG(@"not an accessory-database process; skipping UARP registration");
             return;
         }
-        if (gRegistrationCrashed) {
+        NSString *guard = ACSupportPath([@".registration-in-progress." stringByAppendingString:ACProcessName()]);
+        NSFileManager *fm = [NSFileManager defaultManager];
+        NSError *directoryError = nil;
+        if (![fm createDirectoryAtPath:[guard stringByDeletingLastPathComponent]
+            withIntermediateDirectories:YES attributes:nil error:&directoryError]) {
+            AC_LOG(@"cannot create registration guard directory: %@", directoryError);
             return;
         }
-
-        [@"" writeToFile:guard atomically:YES encoding:NSUTF8StringEncoding error:nil];
+        int marker = open(guard.fileSystemRepresentation, O_WRONLY | O_CREAT | O_EXCL, 0644);
+        if (marker < 0) {
+            AC_LOG(@"registration guard exists or cannot be created for %@ (errno=%d); skipping registration until guard is removed",
+                   ACProcessName(), errno);
+            return;
+        }
+        close(marker);
         ACRegisterUARPAccessories();
-        [fm removeItemAtPath:guard error:nil];
+        if (![fm removeItemAtPath:guard error:nil]) {
+            AC_LOG(@"could not clear registration guard %@", guard);
+        }
         AC_LOG(@"registration finished cleanly");
     }
 }

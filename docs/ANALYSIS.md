@@ -88,13 +88,11 @@
    `+mobileAssetAppleModelNumber` / `+alternativeAppleModelNumbers`，再注册进 manager（已实现于 `tweak/Tweak.xm`）
 2. **CoreBluetooth**：hook `-[CBDevice productName]` 与
    `+[CBAccessoryLogging getProductNameFromProductID:]`，按 PID 返回 "AirPods 5" 等名称（已实现）
-3. **HeadphoneManager / HeadphoneSettingsUI**（待 v0.4）：iOS 27 抽取的 dylib 中，
-   `B868FeatureContent` 位于前者，`B868FeatureProviding.swift` 位于后者。
-   iOS 26.6.2 的 `HeadphoneDevice.allFeatureContents(productID:device:)` 已存在，
-   但没有 `B868FeatureContent`。需要先反汇编对比两版该工厂函数的调用链，
-   并确定 Swift 协议见证表与 ABI，才能接入新的特性对象。
-   不能仅创建同名 Objective-C 类，或把 AirPods 5 的 productID 映射到 AirPods 4 的
-   `B768FeatureContent`：这两种做法都不能证明返回了正确的 AirPods 5 特性集。
+3. **HeadphoneManager / HeadphoneSettingsUI**：iOS 27 的 `B868FeatureContent` 与
+   专属 UI 仍未移植。v0.4 在 iOS 26.x 的 `allFeatureContents` 工厂入口将四个
+   AirPods 5 PID 临时换成用户选择的既有型号 PID，借用真实 FeatureContent 和
+   见证表（§11.14–§11.16）。默认借用 AirPods 4 (ANC)；这只能提供替代 UI，
+   不能证明它具有正确的 AirPods 5 特性集。
 4. 型号表外置：`tweak/layout/Library/Application Support/AirPodsCompat/AirPodsCompatModels.plist`
 
 ## 8. 影响面（待 hook 定位后确认）
@@ -121,13 +119,15 @@
 - [x] tweak v0.2：UARP 配件动态注册 + CoreBluetooth 名称 hook（CI 编译通过）
 - [x] 控制 App 未签名 ipa（CI 编译通过）
 - [ ] 真机验证：安装 deb → 配对 AirPods 5 → 名称/识别/设置页
-- [ ] v0.4：HeadphoneManager `B868FeatureContent` 与 HeadphoneSettingsUI
-      `B868FeatureProviding` 特性链（先确认 Swift 工厂函数调用链及 ABI）
+- [x] v0.4：借用既有 FeatureContent 的设置页，默认 AirPods 4 (ANC)
+- [ ] 深挖移植：`B868FeatureContent` 与 AirPods 5 专属 UI
 - [ ] 真机回归：固件更新、电量、手势、ANC
 
 ## 11. v0.4 研究记录（Swift 特性链）
 
-目标：把 iOS 27 的 `B868FeatureContent` 特性链移植到 26.6.2。结论：**暂不实现**，证据如下。
+本节记录从完整 B868 移植研究到 v0.4 借用方案的过程。§11.1–§11.13 中的
+“v0.4 暂不实现”是用户选定借用方案之前的历史结论；当前实现见 §11.14–§11.16。
+完整 B868 移植仍未实现，也未完成真机验证。
 
 ### 11.1 工厂函数结构（两版一致）
 

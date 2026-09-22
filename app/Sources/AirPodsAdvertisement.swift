@@ -4,7 +4,7 @@ import Foundation
 ///
 /// AirPods broadcast a "proximity pairing" message (AD type 0x07) whose first
 /// value byte is a prefix and whose following two bytes are the model ID
-/// (big-endian), e.g. `4c 00 07 19 01 20 36 ...` -> 0x2036 (AirPods 5).
+/// (big-endian), e.g. `4c 00 07 04 01 20 36 20` -> 0x2036 (AirPods 5).
 struct AirPodsAdvertisement {
     let modelID: UInt16?
     let rawManufacturerData: String
@@ -30,14 +30,14 @@ enum AirPodsAdvertisementParser {
             let type = bytes[index]
             let length = Int(bytes[index + 1])
             let valueStart = index + 2
+            let valueEnd = valueStart + length
+            guard length > 0, valueEnd <= bytes.count else { return nil }
 
-            if type == proximityPairingType, length >= 3, valueStart + 2 < bytes.count {
+            if type == proximityPairingType, length >= 3 {
                 let high = UInt16(bytes[valueStart + 1])
                 let low = UInt16(bytes[valueStart + 2])
                 return (high << 8) | low
             }
-            let valueEnd = valueStart + length
-            guard length > 0, valueEnd <= bytes.count else { return nil }
             index = valueEnd
         }
         return nil

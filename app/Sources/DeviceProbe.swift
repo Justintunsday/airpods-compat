@@ -10,6 +10,7 @@ struct NearbyBLEDevice: Identifiable {
     let modelID: UInt16?
     let modelName: String?
     let rawManufacturerData: String
+    let advertisementDump: String
     let lastSeen: Date
 
     var isAirPods5: Bool {
@@ -17,23 +18,62 @@ struct NearbyBLEDevice: Identifiable {
     }
 
     var modelDescription: String {
-        guard let modelID else { return "未识别到 Apple 近场配对型号" }
+        guard let modelID else {
+            if name.localizedCaseInsensitiveContains("airpods") {
+                return "未识别到 Apple 近场配对型号（已连接或未广播配对包时常见，可开盖后重扫）"
+            }
+            return "未识别到 Apple 近场配对型号"
+        }
         let hex = String(format: "0x%04x", modelID)
         return modelName.map { "\($0)（\(hex)）" } ?? "未知型号 \(hex)"
+    }
+}
+
+struct ConnectedBTDevice: Identifiable {
+    let id = UUID()
+    let name: String
+    let address: String?
+    let productID: UInt16?
+    let vendorID: UInt16?
+    let connected: Bool
+    let className: String
+
+    func modelName(catalog: AirPodsModelCatalog) -> String? {
+        productID.flatMap { catalog.displayName(for: $0) }
+    }
+
+    func describe(catalog: AirPodsModelCatalog) -> String {
+        var parts: [String] = [name]
+        if let model = modelName(catalog: catalog), let productID {
+            parts.append(String(format: "%@（0x%04x）", model, productID))
+        } else if let productID {
+            parts.append(String(format: "pid=0x%04x", productID))
+        }
+        if let vendorID {
+            parts.append(String(format: "vid=0x%04x", vendorID))
+        }
+        if let address {
+            parts.append(address)
+        }
+        parts.append(connected ? "已连接" : "已配对")
+        parts.append(className)
+        return parts.joined(separator: " · ")
     }
 }
 
 /// Detects the currently connected / nearby headphones without a jailbreak:
 ///  - audio route (AVAudioSession) shows connected audio devices by name
 ///  - BLE scan shows nearby AirPods together with the broadcast model ID
-///  - private BluetoothManager enumeration is attempted best-effort
+///  - private BluetoothManager enumeration provides product IDs of connected
+///    devices, which identifies units that no longer broadcast pairing packets
 final class DeviceProbe: NSObject, ObservableObject {
     @Published var bluetoothState: String = "未初始化"
     @Published var isScanning = false
     @Published var audioOutputs: [String] = []
     @Published var audioInputs: [String] = []
     @Published var nearby: [NearbyBLEDevice] = []
-    @Published var privateDevices: [String] = []
+    @Published var connectedDevices: [ConnectedBTDevice] = []
+    @Published var bluetoothProbeStatus: String?
     @Published var lastError: String?
 
     private var central: CBCentralManager?
@@ -42,12 +82,13 @@ final class DeviceProbe: NSObject, ObservableObject {
 
     var detectedAirPods5: Bool {
         nearby.contains { $0.isAirPods5 }
+            || connectedDevices.contains { $0.modelName(catalog: catalog)?.hasPrefix("AirPods 5") ?? false }
     }
 
     func startScan() {
         lastError = nil
         refreshAudioRoute()
-        privateDevices = ACProbeConnectedBluetoothDevices()
+        refreshConnectedDevices()
         if central == nil {
             central = CBCentralManager(delegate: self, queue: .main)
         } else {
@@ -78,6 +119,21 @@ final class DeviceProbe: NSObject, ObservableObject {
         }
     }
 
+    func refreshConnectedDevices() {
+        let entries = ACProbeBluetoothDevices()
+        bluetoothProbeStatus = ACProbeBluetoothStatus()
+        connectedDevices = entries.map { entry in
+            ConnectedBTDevice(
+                name: entry["name"] as? String ?? "(未知名称)",
+                address: entry["address"] as? String,
+                productID: (entry["productID"] as? NSNumber).flatMap { UInt16(exactly: $0.intValue) },
+                vendorID: (entry["vendorID"] as? NSNumber).flatMap { UInt16(exactly: $0.intValue) },
+                connected: (entry["connected"] as? NSNumber)?.boolValue ?? false,
+                className: entry["className"] as? String ?? "?"
+            )
+        }
+    }
+
     func report() -> String {
         var lines: [String] = []
         lines.append("AirPodsCompat 设备探测")
@@ -91,6 +147,12 @@ final class DeviceProbe: NSObject, ObservableObject {
             lines.append(contentsOf: audioInputs.map { "  \($0)" })
         }
         lines.append("")
+        lines.append("[已连接/已配对设备（私有 BluetoothManager）]")
+        lines.append("  状态：\(bluetoothProbeStatus ?? "未知")")
+        for device in connectedDevices {
+            lines.append("  \(device.describe(catalog: catalog))")
+        }
+        lines.append("")
         lines.append("[附近 BLE 设备]")
         if nearby.isEmpty {
             lines.append("  （无）")
@@ -102,9 +164,6 @@ final class DeviceProbe: NSObject, ObservableObject {
                 }
             }
         }
-        lines.append("")
-        lines.append("[已连接设备（私有 BluetoothManager，尽力）]")
-        lines.append(contentsOf: privateDevices.map { "  \($0)" })
         return lines.joined(separator: "\n")
     }
 
@@ -130,10 +189,26 @@ final class DeviceProbe: NSObject, ObservableObject {
             modelID: modelID,
             modelName: modelName,
             rawManufacturerData: parsed?.rawManufacturerData ?? "",
+            advertisementDump: dumpAdvertisement(advertisement),
             lastSeen: Date()
         )
         discovered[id] = device
         nearby = discovered.values.sorted { $0.rssi > $1.rssi }
+    }
+
+    private func dumpAdvertisement(_ advertisement: [String: Any]) -> String {
+        advertisement.keys.sorted().map { key in
+            let value = advertisement[key]
+            let text: String
+            if let data = value as? Data {
+                text = AirPodsAdvertisementParser.hexString(data)
+            } else if let list = value as? [Any] {
+                text = list.map { "\($0)" }.joined(separator: ",")
+            } else {
+                text = "\(value ?? "")"
+            }
+            return "\(key)=\(text)"
+        }.joined(separator: "\n")
     }
 }
 

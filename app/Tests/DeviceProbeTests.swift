@@ -60,6 +60,24 @@ final class DeviceProbeTests: XCTestCase {
         XCTAssertFalse(catalog.isAirPods5(modelID: 0x201b))
     }
 
+    func testConnectedDeviceProductIDMapsToModelName() {
+        let json = """
+        {"models":[{"productID":8246,"display":"AirPods 5"}]}
+        """.data(using: .utf8)!
+        let catalog = AirPodsModelCatalog(jsonData: json)
+        let device = ConnectedBTDevice(
+            name: "Tundrey's AirPods",
+            address: "1C:77:54:82:30:1C",
+            productID: 0x2036,
+            vendorID: 0x004C,
+            connected: true,
+            className: "BluetoothDevice"
+        )
+        XCTAssertEqual(device.modelName(catalog: catalog), "AirPods 5")
+        XCTAssertTrue(device.describe(catalog: catalog).contains("0x2036"))
+        XCTAssertTrue(device.describe(catalog: catalog).contains("已连接"))
+    }
+
     /// The host app ships the CoreUARP-extracted table; make sure the AirPods 5
     /// model IDs resolve so on-device detection can print a name.
     func testBundledCatalogCoversAirPods5() {

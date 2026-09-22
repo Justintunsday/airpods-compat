@@ -4,12 +4,14 @@
 #import <objc/message.h>
 #import <objc/runtime.h>
 
-static NSString *ACProbeStringValue(id object, NSArray<NSString *> *keys) {
+static NSString *gProbeStatus = nil;
+
+static id ACProbeValue(id object, NSArray<NSString *> *keys) {
     for (NSString *key in keys) {
         @try {
             id value = [object valueForKey:key];
             if (value != nil) {
-                return [value description];
+                return value;
             }
         } @catch (NSException *exception) {
             (void)exception;
@@ -19,7 +21,7 @@ static NSString *ACProbeStringValue(id object, NSArray<NSString *> *keys) {
             @try {
                 id value = ((id (*)(id, SEL))objc_msgSend)(object, sel);
                 if (value != nil) {
-                    return [value description];
+                    return value;
                 }
             } @catch (NSException *exception) {
                 (void)exception;
@@ -29,62 +31,117 @@ static NSString *ACProbeStringValue(id object, NSArray<NSString *> *keys) {
     return nil;
 }
 
-NSArray<NSString *> *ACProbeConnectedBluetoothDevices(void) {
-    NSMutableArray<NSString *> *lines = [NSMutableArray array];
+static NSString *ACProbeString(id object, NSArray<NSString *> *keys) {
+    id value = ACProbeValue(object, keys);
+    return value ? [value description] : nil;
+}
+
+static NSNumber *ACProbeNumber(id object, NSArray<NSString *> *keys) {
+    id value = ACProbeValue(object, keys);
+    if ([value isKindOfClass:[NSNumber class]]) {
+        return value;
+    }
+    if ([value isKindOfClass:[NSString class]]) {
+        unsigned int parsed = 0;
+        if ([[NSScanner scannerWithString:value] scanHexInt:&parsed]) {
+            return @(parsed);
+        }
+    }
+    return nil;
+}
+
+NSString *ACProbeBluetoothStatus(void) {
+    return gProbeStatus;
+}
+
+static void ACProbeAppendDevices(NSArray *devices, NSMutableArray<NSDictionary *> *out) {
+    if (![devices isKindOfClass:[NSArray class]]) {
+        return;
+    }
+    for (id device in devices) {
+        NSMutableDictionary *entry = [NSMutableDictionary dictionary];
+        entry[@"className"] = NSStringFromClass([device class]);
+        NSString *name = ACProbeString(device, @[ @"name" ]);
+        if (name.length) entry[@"name"] = name;
+        NSString *address = ACProbeString(device, @[ @"address", @"addressString" ]);
+        if (address.length) entry[@"address"] = address;
+        NSNumber *productID = ACProbeNumber(device, @[ @"productId", @"productID", @"productIdentifier" ]);
+        if (productID) entry[@"productID"] = productID;
+        NSNumber *vendorID = ACProbeNumber(device, @[ @"vendorId", @"vendorID" ]);
+        if (vendorID) entry[@"vendorID"] = vendorID;
+        NSNumber *connected = ACProbeNumber(device, @[ @"connected", @"isConnected" ]);
+        if (connected) entry[@"connected"] = connected;
+        NSNumber *paired = ACProbeNumber(device, @[ @"paired", @"isPaired" ]);
+        if (paired) entry[@"paired"] = paired;
+        [out addObject:entry];
+    }
+}
+
+NSArray<NSDictionary<NSString *, id> *> *ACProbeBluetoothDevices(void) {
+    NSMutableArray<NSDictionary *> *out = [NSMutableArray array];
+    gProbeStatus = nil;
 
     void *handle = dlopen("/System/Library/PrivateFrameworks/BluetoothManager.framework/BluetoothManager",
                           RTLD_NOW);
     if (handle == NULL) {
-        [lines addObject:@"私有 BluetoothManager 不可用（沙箱/未越狱限制）"];
-        return lines;
+        gProbeStatus = @"私有 BluetoothManager 不可用（沙箱/未越狱限制）";
+        return out;
     }
 
     Class managerClass = NSClassFromString(@"BluetoothManager");
     if (managerClass == Nil) {
-        [lines addObject:@"BluetoothManager 类不存在"];
-        return lines;
+        gProbeStatus = @"BluetoothManager 类不存在";
+        return out;
     }
 
     @try {
         SEL sharedSel = NSSelectorFromString(@"sharedInstance");
         if (![managerClass respondsToSelector:sharedSel]) {
-            [lines addObject:@"BluetoothManager 无 sharedInstance"];
-            return lines;
+            gProbeStatus = @"BluetoothManager 无 sharedInstance";
+            return out;
         }
         id manager = ((id (*)(id, SEL))objc_msgSend)((id)managerClass, sharedSel);
+        if (!manager) {
+            gProbeStatus = @"BluetoothManager.sharedInstance 为 nil";
+            return out;
+        }
 
+        NSUInteger before = out.count;
         SEL connectedSel = NSSelectorFromString(@"connectedDevices");
-        if (![manager respondsToSelector:connectedSel]) {
-            [lines addObject:@"BluetoothManager 无 connectedDevices"];
-            return lines;
+        if ([manager respondsToSelector:connectedSel]) {
+            ACProbeAppendDevices(((id (*)(id, SEL))objc_msgSend)(manager, connectedSel), out);
         }
-        NSArray *devices = ((id (*)(id, SEL))objc_msgSend)(manager, connectedSel);
-        if (![devices isKindOfClass:[NSArray class]] || devices.count == 0) {
-            [lines addObject:@"connectedDevices 为空（无已连接设备或需蓝牙权限）"];
-            return lines;
+        NSUInteger connectedCount = out.count - before;
+
+        SEL pairedSel = NSSelectorFromString(@"pairedDevices");
+        if ([manager respondsToSelector:pairedSel]) {
+            NSMutableArray *paired = [NSMutableArray array];
+            ACProbeAppendDevices(((id (*)(id, SEL))objc_msgSend)(manager, pairedSel), paired);
+            // keep paired-only entries for context, connected first
+            for (NSDictionary *entry in paired) {
+                NSString *address = entry[@"address"];
+                BOOL duplicate = NO;
+                for (NSDictionary *existing in out) {
+                    if (address.length && [existing[@"address"] isEqual:address]) {
+                        duplicate = YES;
+                        break;
+                    }
+                }
+                if (!duplicate) {
+                    [out addObject:entry];
+                }
+            }
         }
 
-        NSUInteger index = 0;
-        for (id device in devices) {
-            index++;
-            NSString *name = ACProbeStringValue(device, @[ @"name" ]);
-            NSString *address = ACProbeStringValue(device, @[ @"address", @"addressString" ]);
-            NSString *productID = ACProbeStringValue(device, @[ @"productId", @"productID", @"productIdentifier" ]);
-            NSString *vendorID = ACProbeStringValue(device, @[ @"vendorId", @"vendorID" ]);
-            NSString *classString = NSStringFromClass([device class]);
-
-            NSMutableArray<NSString *> *parts = [NSMutableArray array];
-            [parts addObject:[NSString stringWithFormat:@"#%lu %@", (unsigned long)index,
-                              name ?: @"(未知名称)"]];
-            if (address.length) [parts addObject:[NSString stringWithFormat:@"addr=%@", address]];
-            if (productID.length) [parts addObject:[NSString stringWithFormat:@"pid=%@", productID]];
-            if (vendorID.length) [parts addObject:[NSString stringWithFormat:@"vid=%@", vendorID]];
-            [parts addObject:[NSString stringWithFormat:@"cls=%@", classString]];
-            [lines addObject:[parts componentsJoinedByString:@" "]];
+        if (out.count == 0) {
+            gProbeStatus = @"connectedDevices/pairedDevices 为空（无已配对设备或需蓝牙权限）";
+        } else {
+            gProbeStatus = [NSString stringWithFormat:@"已连接 %lu，条目共 %lu",
+                            (unsigned long)connectedCount, (unsigned long)out.count];
         }
     } @catch (NSException *exception) {
-        [lines addObject:[NSString stringWithFormat:@"枚举异常：%@", exception.reason ?: exception.name]];
+        gProbeStatus = [NSString stringWithFormat:@"枚举异常：%@", exception.reason ?: exception.name];
     }
 
-    return lines;
+    return out;
 }

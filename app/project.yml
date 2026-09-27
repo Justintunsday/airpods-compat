@@ -12,6 +12,7 @@ targets:
     sources:
       - Sources
       - Resources
+      - ../shared
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.justintunsday.airpodscompat.app

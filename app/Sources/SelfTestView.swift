@@ -8,7 +8,7 @@ struct SelfTestView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
-                Text("无需越狱即可运行：检查本机系统是否认识 AirPods 5 的各型号，并在 App 进程内干跑 tweak 的动态注册逻辑。")
+                Text("只读自检：检查系统配件类和型号表，不向系统注册配件，也不修改蓝牙设置。")
                     .font(.footnote)
                     .foregroundColor(.secondary)
 

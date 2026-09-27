@@ -7,10 +7,10 @@ NS_ASSUME_NONNULL_BEGIN
 ///   1. environment (iOS version, device, jailbreak presence)
 ///   2. whether the system CoreUARP/CoreBluetooth/HeadphoneManager know the
 ///      AirPods 5 model classes (and what +productID / +appleModelNumber return)
-///   3. a dry-run of the tweak's dynamic class registration in this process
+/// Does not create or register accessories on a real device.
 FOUNDATION_EXPORT NSString *ACRunSelfTest(void);
 
-/// Same dry-run as above but returns structured values for automated tests:
+/// Simulator-only registration against test stubs, for automated tests:
 /// modelCount, uniqueProductIDs, expected, registered, created, already,
 /// grew, actualIdentifiers.
 FOUNDATION_EXPORT NSDictionary *ACRunSelfTestSummary(void);

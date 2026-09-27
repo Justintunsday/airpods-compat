@@ -1,23 +1,40 @@
 # airpods-compat
 
-把新版 AirPods（AirPods 4/5、AirPods Pro 3、AirPods Max 2 及对应充电盒）的支持
-移植到较低版本的 iOS，并提供一个非越狱可用的自检 App 与全套 CI。
+研究新版 AirPods 在旧版 iOS 上的兼容性，提供保守的运行时兼容层、
+只读诊断 App 与 CI。编译成功不代表设备功能或固件更新已经验证。
 
 - 设备：iPhone 16（`iPhone17,3`），iOS 18.0 – 27.x
 - 源版本：iOS 27.0（24A437） · 主目标：iOS 26.6.2（23G90）
 - 越狱：rootless（Dopamine / ElleKit / roothide）与 rootful 均可
 
-## 安全模型（v0.3）
+## 当前保守策略
 
-- **默认只注册本机缺失的新代型号**（`tier=core`，19 个：AirPods 4/5、Pro 3、Max 2 及对应盒子），
+- **首次安装默认只补缺失显示名**：保留系统返回的非空名称；总开关关闭时不安装名称 hook。
+- **UARP 注册默认关闭**：需在 App 手动开启。已有明确写入的有效开关值会保留，
+  升级后请检查；缺失值与错误类型不会开启实验能力。
+- **设置页借用暂停**：不再安装 `allFeatureContents` 的 Swift 私有函数 hook。
+  旧 `BorrowProfile` 配置保留但不生效；需先验证 Swift 调用约定、返回值所有权和真机稳定性。
+- **自检只读**：真机不创建动态配件类、不修改系统配件管理器；注册测试仅在模拟器桩类中运行。
+- **iOS 27+ 跳过兼容 hook 与注册**；SpringBoard 已移出注入范围。
+- **异常即停止**：配置校验失败、私有方法 ABI 不符、基类不可用时跳过；注册失败保留
+  进程独立的守护标记，不在后续启动时自动重试。
+
+详细范围、恢复方法与未验证项见 [docs/STABILITY.md](docs/STABILITY.md)。
+
+## 注册范围与边界
+
+- **手动开启注册后默认只尝试缺失的新代型号**（`tier=core`，19 个：AirPods 4/5、Pro 3、Max 2 及对应盒子），
   Beats/老型号需在 App 里切换到「全部型号」
-- **抽象基类优先**：以 `UARPSupportedAccessoryAirPodsBud/Case/CaseUSB` 为基类，
-  具体型号类只作 fallback，避免继承别的型号的能力
-- **进程分工**：UARP 注册只在 `bluetoothd / uarpd / bluetoothuserd / bluetoothaudiod` 内执行，
-  SpringBoard / 设置只做名称显示 hook
-- **崩溃守护**：注册前写标记文件，完成后清除；若标记残留（上次启动异常），
-  本次启动自动跳过注册，不会无限崩溃
-- App 可切换：总开关 / UARP 注册开关 / 仅新代 vs 全部型号
+- **只使用抽象基类**：`UARPSupportedAccessoryAirPodsBud/Case/CaseUSB` 或
+  `UARPSupportedAccessoryBeatsBluetooth`；不退回其他具体型号，不继承其能力
+- **进程分工**：UARP 注册只在 `bluetoothd / uarpd / bluetoothuserd / bluetoothaudiod` 内执行；
+  设置和配对服务仅补缺失名称
+- **崩溃守护**：每个配件守护进程在注册前独立创建标记，完成后清除；若标记残留，
+  该进程后续启动持续跳过 UARP 注册。排查原因后，需在越狱环境中手动删除
+  `/Library/Application Support/AirPodsCompat/.registration-in-progress.<进程名>`
+  （rootless 安装位于 `/var/jb/Library/Application Support/AirPodsCompat/`）才能重新尝试。
+- App 可切换：总开关 / UARP 注册开关 / 注册范围；设置页借用显示为暂停。
+  写入系统偏好文件需要相应权限；保存失败时界面显示错误并保留原值。
 
 ## 全型号支持
 
@@ -29,7 +46,8 @@
 - 同族的 Beats 蓝牙配件
 - 备选型号关系（A3532↔A3531、A3440↔A3439、A3064↔A3063、A3048↔A3047 …）
 
-运行时只注册本机缺失的型号：iOS 27 原生的自动跳过，老系统补齐各自缺口。
+手动启用注册后，只尝试本机缺失、配置合法且抽象基类可用的型号。
+33 个类是数据覆盖范围，不代表 33 个型号的实际功能均已验证。
 
 ## 兼容性
 
@@ -86,15 +104,20 @@ docs/ANALYSIS.md     # 分析报告（型号映射、hook 目标、风险）
 - 每个缺失型号都能注册成功、`setOfAccessories` 数量确实增长
 - 各配件 `identifier` 互不相同（防回归：曾因标识相同被 NSSet 合并成 1 个）
 
-**2. 非越狱自检（真机）**：App →「诊断 → 运行自检」输出本机缺失型号、
-`HeadphoneManager` 类存在性、动态注册干跑结果，可复制报告。
+**2. 非越狱自检（真机）**：App →「诊断 → 运行自检」只读输出型号表、
+系统原生类和 `HeadphoneManager` 类存在性，可复制报告；不尝试实际注册。
 
 **3. 设备探测（真机）**：App →「诊断 → 设备探测」列出：
 - 音频路由（AVAudioSession）中的已连接设备（AirPods 会显示名称/端口）
 - 附近 BLE 广播中解析出的 Apple 近场配对型号 ID（0x2036/0x2030/0x2037/0x2032
   会高亮为 AirPods 5）
 - 私有 `BluetoothManager` 的已连接设备列表（尽力而为，失败不影响其他区块）
+  状态区分别标明连接、配对和附近广播；附近广播不代表当前已连接。
 可一键复制探测报告。
+扫描 20 秒后自动停止，离开页面也会停止；缓存最多 128 个设备并淘汰过期广播。
+
+**安全策略测试**：模拟器回归覆盖默认关闭、错误类型、重复 PID/型号、非法基类、
+截断广播、私有方法的对象/标量返回值与异常。
 
 **3. 构建校验**：两个 deb 的 `Architecture` 与安装路径（`var/jb` vs `Library`）均在 CI 生成。
 
@@ -109,7 +132,8 @@ docs/ANALYSIS.md     # 分析报告（型号映射、hook 目标、风险）
 - **显示名**：`AirPods 5`、`AirPods 5 (Wireless Charging)`（27.0 位于 CoreBluetooth）
 - **UARP 配件类**：A3440/A3441/A3529/A3529USB/A3530USB/A3532/A3533
   （A3439、A3531 由备选型号覆盖）
-- **Swift 功能链（v0.4 已实现）**：27.0 的 `B868FeatureContent` 在 26.6.2 不存在。
+- **Swift 功能链（v0.4 历史借用方案，当前暂停）**：27.0 的 `B868FeatureContent` 在 26.6.2 不存在。
+  以下描述为历史方案；当前代码不安装此 hook，旧配置不生效。
   tweak 在唯一工厂 `HeadphoneDevice.allFeatureContents(productID:device:)` 入口把
   4 个 AirPods 5 PID（0x2036/0x2030/0x2037/0x2032）替换为 AirPods 4 (ANC) 的
   0x201b，复用系统真实的 `B768FeatureContent` 与其见证表（不伪造 witness table、
@@ -118,7 +142,8 @@ docs/ANALYSIS.md     # 分析报告（型号映射、hook 目标、风险）
   调用链证据见 `docs/ANALYSIS.md` §11.12–§11.14。
   **借用目标可选**：pref `BorrowProfile` = `airpods4anc`（默认，B768/0x201b）/
   `airpodspro2`（B698/0x2014）/ `airpodspro3`（B788/0x2027）/ `off`
-  （类↔型号映射见 §11.16）。
+  （控制 App 可选；类↔型号映射见 §11.16）。这是借用现有 UI，
+  **不等于移植 iOS 27 的 B868 专属特性或验证了实际设备功能**。
   **适用范围 iOS 26+**：FeatureContent 链从 26 才有；15.6.1–18.6.2 上
   `HeadphoneManager` 不存在或没有该链，hook 安全跳过、保持 v0.3 行为
   （跨版本证据见 §11.15；旧版 ANC 行的 PID 门控清单见 §11.16）。

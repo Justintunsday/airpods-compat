@@ -6,7 +6,7 @@ struct DeviceProbeView: View {
 
     var body: some View {
         List {
-            Section(footer: Text("探测只在本机进行，不上传任何数据。BLE 扫描需要蓝牙权限；已连接设备需要私有 API 可用（越狱环境成功率更高）。")) {
+            Section(footer: Text("扫描在 20 秒后自动停止，离开此页面也会停止。探测只在本机进行；蓝牙权限与私有 API 可用性决定结果。")) {
                 Button {
                     probe.startScan()
                 } label: {
@@ -22,9 +22,15 @@ struct DeviceProbeView: View {
                 if let error = probe.lastError {
                     Text(error).foregroundColor(.red)
                 }
-                if probe.detectedAirPods5 {
-                    Label("已探测到 AirPods 5", systemImage: "checkmark.seal.fill")
+                if probe.connectedAirPods5 {
+                    Label("BluetoothManager 报告 AirPods 5 已连接", systemImage: "checkmark.seal.fill")
                         .foregroundColor(.green)
+                }
+                if probe.pairedAirPods5 {
+                    Label("已配对列表中有 AirPods 5", systemImage: "airpods")
+                }
+                if probe.nearbyAirPods5 {
+                    Label("附近发现 AirPods 5 配对广播", systemImage: "dot.radiowaves.left.and.right")
                 }
             }
 
@@ -115,6 +121,7 @@ struct DeviceProbeView: View {
             probe.refreshAudioRoute()
             probe.refreshConnectedDevices()
         }
+        .onDisappear { probe.stopScan() }
     }
 }
 

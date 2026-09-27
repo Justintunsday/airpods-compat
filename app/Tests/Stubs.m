@@ -4,6 +4,7 @@
 // skipping it.
 
 #import <Foundation/Foundation.h>
+#import <CoreGraphics/CoreGraphics.h>
 
 @interface UARPSupportedAccessory : NSObject
 @end
@@ -82,3 +83,17 @@
 void ACInstallTestStubs(void) {
     // classes are registered by the ObjC runtime as soon as this bundle loads
 }
+
+@interface ACScalarProbeFixture : NSObject
+@end
+@implementation ACScalarProbeFixture
+- (BOOL)isConnected { return YES; }
+- (uint32_t)productID { return 0x2036; }
+- (long long)signedValue { return -42; }
+- (NSString *)name { return @"AirPods fixture"; }
+- (CGRect)bounds { return CGRectZero; }
+- (id)echo:(id)value { return value; }
+- (id)throwsValue { @throw [NSException exceptionWithName:@"FixtureException" reason:nil userInfo:nil]; }
+@end
+
+id ACMakeScalarProbeFixture(void) { return [ACScalarProbeFixture new]; }

@@ -88,13 +88,11 @@
    `+mobileAssetAppleModelNumber` / `+alternativeAppleModelNumbers`，再注册进 manager（已实现于 `tweak/Tweak.xm`）
 2. **CoreBluetooth**：hook `-[CBDevice productName]` 与
    `+[CBAccessoryLogging getProductNameFromProductID:]`，按 PID 返回 "AirPods 5" 等名称（已实现）
-3. **HeadphoneManager / HeadphoneSettingsUI**（待 v0.4）：iOS 27 抽取的 dylib 中，
-   `B868FeatureContent` 位于前者，`B868FeatureProviding.swift` 位于后者。
-   iOS 26.6.2 的 `HeadphoneDevice.allFeatureContents(productID:device:)` 已存在，
-   但没有 `B868FeatureContent`。需要先反汇编对比两版该工厂函数的调用链，
-   并确定 Swift 协议见证表与 ABI，才能接入新的特性对象。
-   不能仅创建同名 Objective-C 类，或把 AirPods 5 的 productID 映射到 AirPods 4 的
-   `B768FeatureContent`：这两种做法都不能证明返回了正确的 AirPods 5 特性集。
+3. **HeadphoneManager / HeadphoneSettingsUI**：iOS 27 的 `B868FeatureContent` 与
+   专属 UI 仍未移植。v0.4 在 iOS 26.x 的 `allFeatureContents` 工厂入口将四个
+   AirPods 5 PID 临时换成用户选择的既有型号 PID，借用真实 FeatureContent 和
+   见证表（§11.14–§11.16）。默认借用 AirPods 4 (ANC)；这只能提供替代 UI，
+   不能证明它具有正确的 AirPods 5 特性集。
 4. 型号表外置：`tweak/layout/Library/Application Support/AirPodsCompat/AirPodsCompatModels.plist`
 
 ## 8. 影响面（待 hook 定位后确认）
@@ -121,13 +119,17 @@
 - [x] tweak v0.2：UARP 配件动态注册 + CoreBluetooth 名称 hook（CI 编译通过）
 - [x] 控制 App 未签名 ipa（CI 编译通过）
 - [ ] 真机验证：安装 deb → 配对 AirPods 5 → 名称/识别/设置页
-- [ ] v0.4：HeadphoneManager `B868FeatureContent` 与 HeadphoneSettingsUI
-      `B868FeatureProviding` 特性链（先确认 Swift 工厂函数调用链及 ABI）
+- [x] v0.4：借用既有 FeatureContent 的设置页，默认 AirPods 4 (ANC)
+- [x] 保守化：暂停未验证 ABI 的借用 hook，UARP 默认关闭；当前策略见 §11.17
+- [ ] 深挖移植：`B868FeatureContent` 与 AirPods 5 专属 UI
 - [ ] 真机回归：固件更新、电量、手势、ANC
 
 ## 11. v0.4 研究记录（Swift 特性链）
 
-目标：把 iOS 27 的 `B868FeatureContent` 特性链移植到 26.6.2。结论：**暂不实现**，证据如下。
+本节记录从完整 B868 移植研究到 v0.4 借用方案的过程。§11.1–§11.13 中的
+“v0.4 暂不实现”是用户选定借用方案之前的历史结论；当前实现见 §11.14–§11.16。
+完整 B868 移植仍未实现，也未完成真机验证。§11.14–§11.16 为历史实现；
+当前保守策略见 §11.17。
 
 ### 11.1 工厂函数结构（两版一致）
 
@@ -514,3 +516,16 @@ ret
 不影响 26.x 的 profile 借用。
 - 因此 v0.4 的适用范围 = 主目标 iOS 26.6.2（及任何存在 FeatureContent 链的
   26.x/27 之前的版本）；其余版本保持 v0.3 行为，不回归。
+
+### 11.17 当前保守策略（2026-09-27）
+
+当前代码暂停安装 `allFeatureContents` hook。历史 C/Objective-C 函数指针原型未完整验证
+Swift 的上下文参数、原生数组返回值与所有权；仅有符号与 existential 布局证据不足以
+保证安全转调。旧 `BorrowProfile` 配置保留但不生效，系统使用原有页面。
+
+UARP 默认关闭，只允许抽象基类；不使用具体型号 fallback。配置类型、PID、标识和
+manager 方法签名不符合预期时跳过或停止，失败保留进程守护标记。总开关关闭或 iOS 27+
+时不安装名称 hook，也不注册。名称只填补系统空值，SpringBoard 已移出注入范围。
+
+真机自检改为只读；模拟器桩类注册测试不能证明真实 CoreUARP 接受这些定义。
+私有蓝牙属性读取按返回类型装箱，BLE 扫描限制时间与缓存。具体范围见 `STABILITY.md`。

@@ -11,7 +11,7 @@ INSTALL_TARGET_PROCESSES := SpringBoard bluetoothd
 include $(THEOS)/makefiles/common.mk
 
 TWEAK_NAME := AirPodsCompat
-AirPodsCompat_FILES := Tweak.xm
+AirPodsCompat_FILES := Tweak.xm ../shared/ACSafetyPolicy.m
 AirPodsCompat_CFLAGS := -fobjc-arc
 AirPodsCompat_FRAMEWORKS := Foundation
 AirPodsCompat_LIBRARIES := root

@@ -3,6 +3,7 @@
 #import <dlfcn.h>
 #import <objc/message.h>
 #import <objc/runtime.h>
+#import "../../shared/ACSafetyPolicy.h"
 
 static NSString *gProbeStatus = nil;
 
@@ -17,16 +18,8 @@ static id ACProbeValue(id object, NSArray<NSString *> *keys) {
             (void)exception;
         }
         SEL sel = NSSelectorFromString(key);
-        if ([object respondsToSelector:sel]) {
-            @try {
-                id value = ((id (*)(id, SEL))objc_msgSend)(object, sel);
-                if (value != nil) {
-                    return value;
-                }
-            } @catch (NSException *exception) {
-                (void)exception;
-            }
-        }
+        id value = ACReadNoArgumentValue(object, sel);
+        if (value != nil) return value;
     }
     return nil;
 }
@@ -42,9 +35,15 @@ static NSNumber *ACProbeNumber(id object, NSArray<NSString *> *keys) {
         return value;
     }
     if ([value isKindOfClass:[NSString class]]) {
-        unsigned int parsed = 0;
-        if ([[NSScanner scannerWithString:value] scanHexInt:&parsed]) {
-            return @(parsed);
+        NSString *text = value;
+        NSScanner *scanner = [NSScanner scannerWithString:text];
+        scanner.charactersToBeSkipped = nil;
+        if ([text hasPrefix:@"0x"] || [text hasPrefix:@"0X"]) {
+            unsigned int parsed = 0;
+            if ([scanner scanHexInt:&parsed] && scanner.isAtEnd) return @(parsed);
+        } else {
+            long long parsed = 0;
+            if ([scanner scanLongLong:&parsed] && scanner.isAtEnd && parsed >= 0) return @(parsed);
         }
     }
     return nil;
@@ -96,7 +95,7 @@ NSArray<NSDictionary<NSString *, id> *> *ACProbeBluetoothDevices(void) {
 
     @try {
         SEL sharedSel = NSSelectorFromString(@"sharedInstance");
-        if (![managerClass respondsToSelector:sharedSel]) {
+        if (!ACMethodMatches((id)managerClass, sharedSel, '@', 2, 0)) {
             gProbeStatus = @"BluetoothManager 无 sharedInstance";
             return out;
         }
@@ -108,13 +107,13 @@ NSArray<NSDictionary<NSString *, id> *> *ACProbeBluetoothDevices(void) {
 
         NSUInteger before = out.count;
         SEL connectedSel = NSSelectorFromString(@"connectedDevices");
-        if ([manager respondsToSelector:connectedSel]) {
+        if (ACMethodMatches(manager, connectedSel, '@', 2, 0)) {
             ACProbeAppendDevices(((id (*)(id, SEL))objc_msgSend)(manager, connectedSel), out, YES);
         }
         NSUInteger connectedCount = out.count - before;
 
         SEL pairedSel = NSSelectorFromString(@"pairedDevices");
-        if ([manager respondsToSelector:pairedSel]) {
+        if (ACMethodMatches(manager, pairedSel, '@', 2, 0)) {
             NSMutableArray *paired = [NSMutableArray array];
             ACProbeAppendDevices(((id (*)(id, SEL))objc_msgSend)(manager, pairedSel), paired, NO);
             // keep paired-only entries for context, connected first

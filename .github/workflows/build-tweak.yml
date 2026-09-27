@@ -2,10 +2,13 @@ name: Build Tweak
 
 on:
   workflow_dispatch:
+  pull_request:
+    paths: ["tweak/**", "shared/**", ".github/workflows/build-tweak.yml"]
   push:
     branches: [main]
     paths:
       - "tweak/**"
+      - "shared/**"
       - ".github/workflows/build-tweak.yml"
 
 jobs:

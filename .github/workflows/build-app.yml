@@ -2,10 +2,13 @@ name: Build App
 
 on:
   workflow_dispatch:
+  pull_request:
+    paths: ["app/**", "shared/**", ".github/workflows/build-app.yml"]
   push:
     branches: [main]
     paths:
       - "app/**"
+      - "shared/**"
       - ".github/workflows/build-app.yml"
 
 jobs:

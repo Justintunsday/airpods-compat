@@ -5,6 +5,8 @@
 #import <objc/message.h>
 #import <dlfcn.h>
 #import <sys/utsname.h>
+#import <TargetConditionals.h>
+#import "../../shared/ACSafetyPolicy.h"
 
 #pragma mark - model table (mirrors the tweak's AirPodsCompatModels.plist)
 
@@ -17,24 +19,20 @@ static NSArray<NSDictionary *> *ACTestModels(void) {
         if (data) {
             NSDictionary *json = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];
             if ([json isKindOfClass:[NSDictionary class]]) {
-                models = json[@"models"];
+                id entries = json[@"models"];
+                if ([entries isKindOfClass:NSArray.class]) {
+                    NSMutableArray *normalized = [NSMutableArray array];
+                    for (id entry in entries) {
+                        if (![entry isKindOfClass:NSDictionary.class]) { [normalized removeAllObjects]; break; }
+                        NSMutableDictionary *model = [entry mutableCopy];
+                        if (model[@"alt"]) model[@"alternativeAppleModelNumbers"] = model[@"alt"];
+                        [normalized addObject:model];
+                    }
+                    models = ACValidatedModels(normalized);
+                }
             }
         }
-        if (!models.count) {
-            // minimal fallback if the bundled table is missing
-            models = @[
-                @{ @"model": @"A3532", @"productID": @0x2036, @"display": @"AirPods 5",
-                   @"appleModelNumber": @"A3532", @"alt": @[@"A3531"],
-                   @"baseClasses": @[@"UARPSupportedAccessoryA3064",
-                                     @"UARPSupportedAccessoryA3048",
-                                     @"UARPSupportedAccessoryA3053",
-                                     @"UARPSupportedAccessoryAirPodsBud"] },
-                @{ @"model": @"A3440", @"productID": @0x2030, @"display": @"AirPods 5 (Wireless Charging)",
-                   @"appleModelNumber": @"A3440", @"alt": @[@"A3439"],
-                   @"baseClasses": @[@"UARPSupportedAccessoryA3064",
-                                     @"UARPSupportedAccessoryAirPodsBud"] },
-            ];
-        }
+        models = models ?: @[];
     });
     return models;
 }
@@ -43,7 +41,6 @@ static NSArray<NSString *> *ACFrameworkPaths(void) {
     return @[
         @"/System/Library/PrivateFrameworks/CoreUARP.framework/CoreUARP",
         @"/System/Library/PrivateFrameworks/HeadphoneManager.framework/HeadphoneManager",
-        @"/System/Library/PrivateFrameworks/HeadphoneSettingsUI.framework/HeadphoneSettingsUI",
         @"/System/Library/Frameworks/CoreBluetooth.framework/CoreBluetooth",
     ];
 }
@@ -52,19 +49,24 @@ static NSArray<NSString *> *ACFrameworkPaths(void) {
 
 static BOOL ACClassRespondsToClassSelector(Class cls, NSString *selectorName) {
     if (!cls) return NO;
-    return class_respondsToSelector(object_getClass(cls), NSSelectorFromString(selectorName));
+    return class_getClassMethod(cls, NSSelectorFromString(selectorName)) != NULL;
 }
 
 static uint32_t ACCallProductID(Class cls) {
-    return ((uint32_t (*)(id, SEL))objc_msgSend)((id)cls, NSSelectorFromString(@"productID"));
+    id value = ACReadNoArgumentValue((id)cls, NSSelectorFromString(@"productID"));
+    return [value isKindOfClass:NSNumber.class] ? [value unsignedIntValue] : 0;
 }
 
 static NSString *ACCallModelNumber(Class cls) {
-    return ((id (*)(id, SEL))objc_msgSend)((id)cls, NSSelectorFromString(@"appleModelNumber"));
+    id value = ACReadNoArgumentValue((id)cls, NSSelectorFromString(@"appleModelNumber"));
+    return [value isKindOfClass:NSString.class] ? value : nil;
 }
 
 static NSArray *ACCallAlternativeModelNumbers(Class cls) {
-    return ((id (*)(id, SEL))objc_msgSend)((id)cls, NSSelectorFromString(@"alternativeAppleModelNumbers"));
+    id value = ACReadNoArgumentValue((id)cls, NSSelectorFromString(@"alternativeAppleModelNumbers"));
+    if (![value isKindOfClass:NSArray.class]) return nil;
+    for (id number in value) if (![number isKindOfClass:NSString.class]) return nil;
+    return value;
 }
 
 static id ACCallClass(id target, NSString *selectorName) {
@@ -128,21 +130,6 @@ static Class ACFirstAvailableClass(NSArray<NSString *> *names) {
     for (NSString *name in names) {
         Class cls = NSClassFromString(name);
         if (!cls) continue;
-        if ([name containsString:@"AirPods"]) {
-            // abstract base: inherit from a concrete sibling so -init works
-            unsigned int count = 0;
-            Class *classes = objc_copyClassList(&count);
-            Class concrete = Nil;
-            for (unsigned int i = 0; i < count; i++) {
-                Class candidate = classes[i];
-                if (class_getSuperclass(candidate) != cls) continue;
-                if (![NSStringFromClass(candidate) hasPrefix:@"UARPSupportedAccessoryA"]) continue;
-                concrete = candidate;
-                break;
-            }
-            free(classes);
-            if (concrete) return concrete;
-        }
         return cls;
     }
     return Nil;
@@ -192,7 +179,7 @@ static void ACRunRegistrationDryRun(NSMutableString *out) {
         }
 
         expected++;
-        NSString *clsName = [@"AirPodsCompat_" stringByAppendingString:model[@"model"]];
+        NSString *clsName = [@"AirPodsCompat_Simulator_" stringByAppendingString:model[@"model"]];
         Class cls = NSClassFromString(clsName);
         BOOL preexisting = (cls != Nil);
         if (!cls) {
@@ -253,7 +240,7 @@ static void ACRunRegistrationDryRun(NSMutableString *out) {
     BOOL grew = after.count > before.count;
     [out appendFormat:@"  注册后 setOfAccessories 数量: %lu（新增 %lu）\n",
         (unsigned long)after.count, (unsigned long)(after.count - before.count)];
-    BOOL pass = (registered == expected) && (createdNow == 0 || grew);
+    BOOL pass = expected > 0 && (registered == expected) && (createdNow == 0 || grew);
     [out appendFormat:@"  干跑结果: %@ (expected=%lu registered=%lu created=%lu already=%lu grew=%d)\n",
         pass ? @"PASS ✅" : @"FAIL ❌", (unsigned long)expected, (unsigned long)registered,
         (unsigned long)createdNow, (unsigned long)alreadyRegistered, grew];
@@ -270,10 +257,14 @@ static void ACRunRegistrationDryRun(NSMutableString *out) {
 NSDictionary *ACRunSelfTestSummary(void) {
     @autoreleasepool {
         NSMutableString *sink = [NSMutableString string];
+#if TARGET_OS_SIMULATOR
         @try {
             ACRunRegistrationDryRun(sink);
         } @catch (__unused NSException *e) {
         }
+#else
+        gDryRunSummary = [@{ @"pass": @NO, @"registrationSkipped": @YES } mutableCopy];
+#endif
 
         NSMutableDictionary *summary = gDryRunSummary ? [gDryRunSummary mutableCopy]
                                                       : [NSMutableDictionary dictionary];
@@ -320,7 +311,7 @@ NSString *ACRunSelfTest(void) {
     [out appendString:@"\n"];
 
     // 3. native support inventory
-    [out appendString:@"[系统原生 AirPods 5 支持]\n"];
+    [out appendString:@"[型号表中的系统原生配件类]\n"];
     NSUInteger nativeCount = 0;
     for (NSDictionary *model in ACTestModels()) {
         NSString *clsName = [@"UARPSupportedAccessory" stringByAppendingString:model[@"model"]];
@@ -337,7 +328,7 @@ NSString *ACRunSelfTest(void) {
         [out appendFormat:@"  [有] %@ pid=0x%x name=%@%@\n", model[@"model"], pid, name ?: @"-",
              alts.count ? [NSString stringWithFormat:@" alt=%@", [alts componentsJoinedByString:@","]] : @""];
     }
-    [out appendFormat:@"  结论: 系统原生认识 %lu/%lu 个 AirPods 5 类\n\n",
+    [out appendFormat:@"  结论: 系统原生认识 %lu/%lu 个配件类\n\n",
         (unsigned long)nativeCount, (unsigned long)ACTestModels().count];
 
     // 4. HeadphoneManager / CoreBluetooth extras
@@ -352,16 +343,10 @@ NSString *ACRunSelfTest(void) {
     }
     [out appendString:@"\n"];
 
-    // 5. dry run
-    [out appendString:@"[动态注册干跑（与越狱 tweak 同逻辑）]\n"];
-    @try {
-        ACRunRegistrationDryRun(out);
-    } @catch (NSException *e) {
-        [out appendFormat:@"  [fail] 干跑崩溃: %@\n", e.reason];
-    }
+    [out appendString:@"[注册验证]\n  真机自检只读，不创建动态配件类，也不向系统管理器注册。\n"];
 
     [out appendString:@"\n[提示]\n"];
-    [out appendString:@"  · 本自检只能验证“系统是否认识 + 注册逻辑是否可行”，\n"];
+    [out appendString:@"  · 本自检只检查系统类与型号表，不能证明注册或功能可用。\n"];
     [out appendString:@"    真正让蓝牙守护进程生效仍需越狱包（tweak）。\n"];
     [out appendString:@"  · 若原生支持全部为“缺”，说明需要越狱部署 tweak 才能补上。\n"];
 

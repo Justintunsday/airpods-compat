@@ -13,19 +13,18 @@ private enum BorrowProfile: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .airpods4anc: return "AirPods 4 (ANC) · 默认"
+        case .airpods4anc: return "AirPods 4 (ANC)"
         case .airpodspro2: return "AirPods Pro 2"
         case .airpodspro3: return "AirPods Pro 3"
-        case .off: return "关闭设置页借用"
+        case .off: return "关闭设置页借用 · 默认"
         }
     }
 }
 
 struct ContentView: View {
-    @State private var enabled: Bool = (Prefs.load()["Enabled"] as? Bool) ?? true
-    @State private var uarpEnabled: Bool = (Prefs.load()["UARPEnabled"] as? Bool) ?? true
-    @State private var scopeAll: Bool = (Prefs.load()["Scope"] as? String) == "all"
-    @State private var borrowProfile: BorrowProfile = BorrowProfile(rawValue: Prefs.load()["BorrowProfile"] as? String ?? "") ?? .airpods4anc
+    @State private var enabled: Bool = Prefs.bool("Enabled", default: true)
+    @State private var uarpEnabled: Bool = Prefs.bool("UARPEnabled", default: false)
+    @State private var scopeAll: Bool = Prefs.scopeAll
     @State private var status: String = ""
 
     private let models: [ModelInfo] = [
@@ -39,18 +38,21 @@ struct ContentView: View {
         NavigationView {
             List {
                 Section(header: Text("开关")) {
-                    Toggle("启用移植", isOn: Binding(
+                    Toggle("启用兼容层", isOn: Binding(
                         get: { enabled },
                         set: { value in
                             if savePreference("Enabled", value: value) { enabled = value }
                         }
                     ))
-                    Toggle("UARP 配件注册", isOn: Binding(
+                    Toggle("UARP 配件注册（实验）", isOn: Binding(
                         get: { uarpEnabled },
                         set: { value in
                             if savePreference("UARPEnabled", value: value) { uarpEnabled = value }
                         }
                     ))
+                    Text("默认只补充缺失的显示名。配件注册会影响系统蓝牙进程，需手动开启；固件更新尚未验证。")
+                        .font(.footnote)
+                        .foregroundColor(.secondary)
                     if !status.isEmpty {
                         Text(status)
                             .font(.footnote)
@@ -70,18 +72,12 @@ struct ContentView: View {
                 }
 
                 Section(header: Text("AirPods 5 设置页"),
-                        footer: Text("iOS 26.x 借用系统现有的特性页；图标、文案与可用行可能与 AirPods 5 不符。iOS 27 原生支持时自动跳过。")) {
-                    Picker("借用目标", selection: Binding(
-                        get: { borrowProfile },
-                        set: { value in
-                            if savePreference("BorrowProfile", value: value.rawValue) {
-                                borrowProfile = value
-                            }
-                        }
-                    )) {
-                        ForEach(BorrowProfile.allCases) { profile in
-                            Text(profile.title).tag(profile)
-                        }
+                        footer: Text("借用功能暂停，当前使用系统原有页面。待 Swift 调用约定与真机稳定性验证后再启用；旧借用配置不生效。")) {
+                    Text("设置页借用：暂停")
+                    if let saved = Prefs.load()["BorrowProfile"] as? String,
+                       let profile = BorrowProfile(rawValue: saved), profile != .off {
+                        Text("此前选择：\(profile.title)（当前不生效）")
+                            .font(.footnote).foregroundColor(.secondary)
                     }
                 }
 
@@ -147,12 +143,11 @@ struct ContentView: View {
 
     private func describeState() -> String {
         let prefs = Prefs.load()
-        let enabled = (prefs["Enabled"] as? Bool) ?? true
-        let uarp = (prefs["UARPEnabled"] as? Bool) ?? true
-        let scope = (prefs["Scope"] as? String) ?? "core"
-        let borrow = (prefs["BorrowProfile"] as? String) ?? BorrowProfile.airpods4anc.rawValue
+        let enabled = ACBoolPreference(prefs as NSDictionary, "Enabled", true)
+        let uarp = ACBoolPreference(prefs as NSDictionary, "UARPEnabled", false)
+        let scope = ACFullModelScope(prefs as NSDictionary) ? "all" : "core"
         let directoryExists = FileManager.default.fileExists(atPath: Prefs.directory)
-        return "enabled=\(enabled) uarp=\(uarp) scope=\(scope) borrow=\(borrow) · prefsDir=\(directoryExists ? "存在" : "不存在")"
+        return "enabled=\(enabled) uarp=\(uarp) scope=\(scope) · 设置页借用已暂停 · prefsDir=\(directoryExists ? "存在" : "不存在")"
     }
 }
 

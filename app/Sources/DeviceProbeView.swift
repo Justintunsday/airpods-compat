@@ -6,7 +6,7 @@ struct DeviceProbeView: View {
 
     var body: some View {
         List {
-            Section(footer: Text("探测只在本机进行，不上传任何数据。BLE 扫描需要蓝牙权限；已连接设备需要私有 API 可用（越狱环境成功率更高）。")) {
+            Section(footer: Text("扫描在 20 秒后自动停止，离开此页面也会停止。探测只在本机进行；蓝牙权限与私有 API 可用性决定结果。")) {
                 Button {
                     probe.startScan()
                 } label: {
@@ -121,6 +121,7 @@ struct DeviceProbeView: View {
             probe.refreshAudioRoute()
             probe.refreshConnectedDevices()
         }
+        .onDisappear { probe.stopScan() }
     }
 }
 

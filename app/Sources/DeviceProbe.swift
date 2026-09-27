@@ -77,6 +77,8 @@ final class DeviceProbe: NSObject, ObservableObject {
     @Published var lastError: String?
 
     private var central: CBCentralManager?
+    private var scanRequested = false
+    private var scanTimeout: DispatchWorkItem?
     private var discovered: [UUID: NearbyBLEDevice] = [:]
     private let catalog = AirPodsModelCatalog.shared
 
@@ -100,6 +102,7 @@ final class DeviceProbe: NSObject, ObservableObject {
         lastError = nil
         refreshAudioRoute()
         refreshConnectedDevices()
+        scanRequested = true
         if central == nil {
             central = CBCentralManager(delegate: self, queue: .main)
         } else {
@@ -108,6 +111,9 @@ final class DeviceProbe: NSObject, ObservableObject {
     }
 
     func stopScan() {
+        scanRequested = false
+        scanTimeout?.cancel()
+        scanTimeout = nil
         central?.stopScan()
         isScanning = false
     }
@@ -180,15 +186,25 @@ final class DeviceProbe: NSObject, ObservableObject {
     }
 
     private func beginScanIfReady() {
-        guard let central, central.state == .poweredOn else { return }
+        guard scanRequested, !isScanning, let central, central.state == .poweredOn else { return }
         central.scanForPeripherals(
             withServices: nil,
             options: [CBCentralManagerScanOptionAllowDuplicatesKey: true]
         )
         isScanning = true
+        let timeout = DispatchWorkItem { [weak self] in self?.stopScan() }
+        scanTimeout = timeout
+        DispatchQueue.main.asyncAfter(deadline: .now() + 20, execute: timeout)
     }
 
     private func ingest(name: String?, rssi: Int, advertisement: [String: Any], id: UUID) {
+        guard scanRequested, isScanning else { return }
+        let now = Date()
+        discovered = discovered.filter { now.timeIntervalSince($0.value.lastSeen) <= 30 }
+        if discovered[id] == nil, discovered.count >= 128,
+           let oldest = discovered.min(by: { $0.value.lastSeen < $1.value.lastSeen })?.key {
+            discovered.removeValue(forKey: oldest)
+        }
         let manufacturerData = advertisement[CBAdvertisementDataManufacturerDataKey] as? Data
         let parsed = manufacturerData.map { AirPodsAdvertisementParser.parse(manufacturerData: $0) }
         let modelID = parsed?.modelID
@@ -202,7 +218,7 @@ final class DeviceProbe: NSObject, ObservableObject {
             modelName: modelName,
             rawManufacturerData: parsed?.rawManufacturerData ?? "",
             advertisementDump: dumpAdvertisement(advertisement),
-            lastSeen: Date()
+            lastSeen: now
         )
         discovered[id] = device
         nearby = discovered.values.sorted { $0.rssi > $1.rssi }
@@ -231,12 +247,16 @@ extension DeviceProbe: CBCentralManagerDelegate {
             bluetoothState = "蓝牙可用"
             beginScanIfReady()
         case .poweredOff:
+            stopScan()
             bluetoothState = "蓝牙已关闭"
         case .unauthorized:
+            stopScan()
             bluetoothState = "蓝牙权限被拒绝（设置 → 隐私 → 蓝牙）"
         case .unsupported:
+            stopScan()
             bluetoothState = "本机不支持 BLE（模拟器）"
         default:
+            stopScan()
             bluetoothState = "未知状态 \(central.state.rawValue)"
         }
     }

@@ -31,22 +31,7 @@ static NSString *ACProbeString(id object, NSArray<NSString *> *keys) {
 
 static NSNumber *ACProbeNumber(id object, NSArray<NSString *> *keys) {
     id value = ACProbeValue(object, keys);
-    if ([value isKindOfClass:[NSNumber class]]) {
-        return value;
-    }
-    if ([value isKindOfClass:[NSString class]]) {
-        NSString *text = value;
-        NSScanner *scanner = [NSScanner scannerWithString:text];
-        scanner.charactersToBeSkipped = nil;
-        if ([text hasPrefix:@"0x"] || [text hasPrefix:@"0X"]) {
-            unsigned int parsed = 0;
-            if ([scanner scanHexInt:&parsed] && scanner.isAtEnd) return @(parsed);
-        } else {
-            long long parsed = 0;
-            if ([scanner scanLongLong:&parsed] && scanner.isAtEnd && parsed >= 0) return @(parsed);
-        }
-    }
-    return nil;
+    return ACProbeUnsignedNumber(value);
 }
 
 NSString *ACProbeBluetoothStatus(void) {

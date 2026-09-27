@@ -13,5 +13,6 @@ FOUNDATION_EXPORT BOOL ACMethodMatches(id _Nullable target, SEL selector,
                                       char returnType, NSUInteger argumentCount,
                                       char argumentType);
 FOUNDATION_EXPORT id _Nullable ACReadNoArgumentValue(id _Nullable target, SEL selector);
+FOUNDATION_EXPORT NSNumber * _Nullable ACProbeUnsignedNumber(id _Nullable value);
 
 NS_ASSUME_NONNULL_END

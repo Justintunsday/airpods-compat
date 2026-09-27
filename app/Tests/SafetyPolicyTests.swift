@@ -39,7 +39,7 @@ final class SafetyPolicyTests: XCTestCase {
     func testMalformedModelTablesAreRejectedWithoutPartialRegistration() {
         let badEntries: [[String: Any]] = [
             model(["model": "../../A3532"]), model(["appleModelNumber": []]),
-            model(["productID": "8246"]), model(["productID": 0]),
+            model(["productID": "8246"]), model(["productID": true]), model(["productID": 0]),
             model(["productID": 65536]), model(["productID": 8246.5]),
             model(["tier": "unexpected"]), model(["baseClasses": []]),
             model(["baseClasses": ["UARPSupportedAccessoryA3064"]]),
@@ -84,5 +84,14 @@ final class SafetyPolicyTests: XCTestCase {
         XCTAssertFalse(ACMethodMatches(fixture, NSSelectorFromString("isConnected"), 64, 2, 0))
         XCTAssertTrue(ACMethodMatches(fixture, NSSelectorFromString("echo:"), 64, 3, 64))
         XCTAssertFalse(ACMethodMatches(fixture, NSSelectorFromString("echo:"), 64, 3, 73)) // 'I'
+    }
+
+    func testProbeNumbersDistinguishDecimalFromHexAndRejectAmbiguity() {
+        XCTAssertEqual(ACProbeUnsignedNumber("8246")?.uint32Value, 0x2036)
+        XCTAssertEqual(ACProbeUnsignedNumber("0x2036")?.uint32Value, 0x2036)
+        XCTAssertEqual(ACProbeUnsignedNumber("0X2036")?.uint32Value, 0x2036)
+        XCTAssertEqual(ACProbeUnsignedNumber(NSNumber(value: 8246))?.uint32Value, 0x2036)
+        let invalidValues: [Any] = ["8246tail", "203a", "-1", "+1", " 8246", "0x", "0x100000000", "4294967296", -1, 8246.5, []]
+        for value in invalidValues { XCTAssertNil(ACProbeUnsignedNumber(value)) }
     }
 }

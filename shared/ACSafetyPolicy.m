@@ -36,6 +36,7 @@ static BOOL ACModelNumberIsValid(id value) {
 
 static BOOL ACProductIDIsValid(id value) {
     if (![value isKindOfClass:NSNumber.class]) return NO;
+    if (CFGetTypeID((__bridge CFTypeRef)value) == CFBooleanGetTypeID()) return NO;
     double number = [value doubleValue];
     return number >= 1 && number <= UINT16_MAX && number == [value unsignedIntValue];
 }
@@ -102,7 +103,7 @@ NSDictionary<NSNumber *, NSString *> *ACValidatedDisplayNames(id names) {
 }
 
 BOOL ACMethodMatches(id target, SEL selector, char returnType, NSUInteger argumentCount, char argumentType) {
-    if (!target) return NO;
+    if (!target || (argumentCount != 2 && argumentCount != 3)) return NO;
     Method method = class_getInstanceMethod(object_getClass(target), selector);
     if (!method || method_getNumberOfArguments(method) != argumentCount) return NO;
     char result[128] = {0};
@@ -121,7 +122,7 @@ id ACReadNoArgumentValue(id target, SEL selector) {
     Method method = class_getInstanceMethod(object_getClass(target), selector);
     if (!method || method_getNumberOfArguments(method) != 2) return nil;
     @try {
-        NSMethodSignature *signature = [target methodSignatureForSelector:selector];
+        NSMethodSignature *signature = [NSMethodSignature signatureWithObjCTypes:method_getTypeEncoding(method)];
         if (!signature || signature.numberOfArguments != 2) return nil;
         const char *type = ACUnqualifiedType(signature.methodReturnType);
         if (!strchr("@BcCsSiIlLqQ", *type) || !*type) return nil;
@@ -152,5 +153,29 @@ id ACReadNoArgumentValue(id target, SEL selector) {
         }
 #undef AC_BOX_RETURN
     } @catch (__unused NSException *exception) {}
+    return nil;
+}
+
+NSNumber *ACProbeUnsignedNumber(id value) {
+    if ([value isKindOfClass:NSNumber.class]) {
+        double number = [value doubleValue];
+        if (number >= 0 && number <= UINT32_MAX && number == [value unsignedIntValue]) return value;
+        return nil;
+    }
+    if (![value isKindOfClass:NSString.class] || [value length] == 0 || [value length] > 12) return nil;
+    NSString *text = value;
+    NSScanner *scanner = [NSScanner scannerWithString:text];
+    scanner.charactersToBeSkipped = nil;
+    if ([text hasPrefix:@"0x"] || [text hasPrefix:@"0X"]) {
+        unsigned long long parsed = 0;
+        if ([scanner scanHexLongLong:&parsed] && scanner.isAtEnd && parsed <= UINT32_MAX) return @(parsed);
+    } else {
+        for (NSUInteger i = 0; i < text.length; i++) {
+            unichar character = [text characterAtIndex:i];
+            if (character < '0' || character > '9') return nil;
+        }
+        unsigned long long parsed = text.longLongValue;
+        if (parsed <= UINT32_MAX) return @(parsed);
+    }
     return nil;
 }

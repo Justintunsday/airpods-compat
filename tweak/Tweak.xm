@@ -69,6 +69,9 @@ static NSMutableSet<NSString *> *gHookedUIIconClasses;
 static NSMutableDictionary<NSString *, NSValue *> *gOriginalMediaIsAirPodsIMPs;
 static NSMutableSet<NSString *> *gHookedMediaIsAirPodsClasses;
 static NSMutableSet<NSString *> *gDumpedMethodClasses;
+static void *ACAssetAirPodsKey = &ACAssetAirPodsKey;
+static id (*orig_AssetInitRoute)(id, SEL, id);
+static id (*orig_AssetIcon)(id, SEL);
 static NSMutableSet<NSNumber *> *gLoggedUIMappings;
 static NSMutableDictionary<NSString *, NSValue *> *gOriginalUIProductIDIMPs;
 static NSMutableDictionary<NSString *, NSValue *> *gOriginalUIProductNameIMPs;
@@ -530,8 +533,61 @@ static void ACHookMediaIsAirPodsClass(NSString *className) {
     }
 }
 
+static id AC_AssetInitRoute(id self, SEL _cmd, id route) {
+    id asset = orig_AssetInitRoute ? orig_AssetInitRoute(self, _cmd, route) : nil;
+    NSString *name = nil;
+    NSString *modelID = nil;
+    id outputDevice = nil;
+    @try {
+        name = [route valueForKey:@"name"];
+        modelID = [route valueForKey:@"modelID"];
+        outputDevice = [route valueForKey:@"outputDevice"];
+    } @catch (__unused NSException *exception) {
+    }
+    BOOL airpods = [name isKindOfClass:[NSString class]] && [name containsString:@"AirPods"];
+    if (airpods) {
+        objc_setAssociatedObject(asset, ACAssetAirPodsKey, @YES, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+    }
+    AC_LOG(@"MRUOutputDeviceAsset init route=%@ name=%@ modelID=%@ outputDevice=%@ airpods=%d",
+           NSStringFromClass([route class]), name, modelID,
+           outputDevice ? NSStringFromClass([outputDevice class]) : nil, airpods);
+    return asset;
+}
+
+static id AC_AssetIcon(id self, SEL _cmd) {
+    id icon = orig_AssetIcon ? orig_AssetIcon(self, _cmd) : nil;
+    BOOL airpods = [objc_getAssociatedObject(self, ACAssetAirPodsKey) boolValue];
+    AC_LOG(@"MRUOutputDeviceAsset icon class=%@ airpods=%d",
+           icon ? NSStringFromClass([icon class]) : nil, airpods);
+    return icon;
+}
+
+static void ACHookMediaAssetClass(void) {
+    Class cls = objc_getClass("MRUOutputDeviceAsset");
+    if (!cls) {
+        return;
+    }
+    static BOOL hooked = NO;
+    if (hooked) {
+        return;
+    }
+    SEL initSel = sel_registerName("initWithOutputDeviceRoute:");
+    Method initMethod = class_getInstanceMethod(cls, initSel);
+    if (initMethod) {
+        MSHookMessageEx(cls, initSel, (IMP)AC_AssetInitRoute, (IMP *)&orig_AssetInitRoute);
+    }
+    SEL iconSel = sel_registerName("icon");
+    Method iconMethod = class_getInstanceMethod(cls, iconSel);
+    if (iconMethod) {
+        MSHookMessageEx(cls, iconSel, (IMP)AC_AssetIcon, (IMP *)&orig_AssetIcon);
+    }
+    hooked = YES;
+    AC_LOG(@"hooked MRUOutputDeviceAsset init/icon");
+}
+
 static void ACInstallLazyUIHooks(void) {
     ACHookUIIconClass(@"HPSBatteryStatusView");
+    ACHookMediaAssetClass();
     ACHookMediaIsAirPodsClass(@"MRAVOutputDevice");
     ACHookMediaIsAirPodsClass(@"MRAVConcreteOutputDevice");
     ACHookMediaIsAirPodsClass(@"MRAVDistantOutputDevice");

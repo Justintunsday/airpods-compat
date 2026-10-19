@@ -73,7 +73,6 @@ static NSMutableDictionary<NSString *, NSValue *> *gOriginalUIModelNameIMPs;
 static NSMutableSet<NSString *> *gHookedUIProductIDClasses;
 static NSMutableSet<NSString *> *gHookedUIProductNameClasses;
 static NSMutableSet<NSString *> *gHookedUIModelNameClasses;
-static NSMutableSet<NSString *> *gDumpedMethodClasses;
 static void *ACOriginalUIProductIDKey = &ACOriginalUIProductIDKey;
 static NSMutableDictionary<NSString *, NSDictionary *> *gClassTable;
 static NSDictionary<NSNumber *, NSString *> *gDisplayNames;
@@ -230,29 +229,12 @@ static NSNumber *ACOriginalProductIDForUIObject(id object) {
     return original;
 }
 
-static void ACDumpMethods(Class cls) {
-    NSString *className = NSStringFromClass(cls);
-    if (!cls || [gDumpedMethodClasses containsObject:className]) {
-        return;
-    }
-    [gDumpedMethodClasses addObject:className];
-    unsigned int count = 0;
-    Method *methods = class_copyMethodList(cls, &count);
-    for (unsigned int i = 0; i < count; i++) {
-        AC_LOG(@"method %@ %@ %s", className,
-               NSStringFromSelector(method_getName(methods[i])),
-               method_getTypeEncoding(methods[i]));
-    }
-    free(methods);
-}
-
 static unsigned int AC_UIProductID(id self, SEL _cmd) {
     NSValue *value = ACOriginalIMPForObject(gOriginalUIProductIDIMPs, self);
     if (!value) {
         return 0;
     }
     unsigned int productID = ((unsigned int (*)(id, SEL))value.pointerValue)(self, _cmd);
-    AC_LOG(@"productID class=%@ value=0x%x", NSStringFromClass([self class]), productID);
     uint32_t mapped = ACMapUIAccessoryProductID(productID);
     if (mapped != productID) {
         objc_setAssociatedObject(self, ACOriginalUIProductIDKey, @(productID),
@@ -276,9 +258,7 @@ static id AC_UIProductName(id self, SEL _cmd) {
     if (!value) {
         return nil;
     }
-    id originalName = ((id (*)(id, SEL))value.pointerValue)(self, _cmd);
-    AC_LOG(@"productName class=%@ original=%@", NSStringFromClass([self class]), originalName);
-    return originalName;
+    return ((id (*)(id, SEL))value.pointerValue)(self, _cmd);
 }
 
 static void ACHookUIProductIDClass(NSString *className) {
@@ -322,7 +302,6 @@ static void ACHookUIProductNameClass(NSString *className) {
     if (!method) {
         return;
     }
-    ACDumpMethods(cls);
     const char *types = method_getTypeEncoding(method);
     if (!types || types[0] != '@') {
         return;
@@ -380,7 +359,6 @@ static void ACHookUIModelNameClass(NSString *className) {
     if (!method) {
         return;
     }
-    ACDumpMethods(cls);
     const char *types = method_getTypeEncoding(method);
     NSMethodSignature *signature = types ? [NSMethodSignature signatureWithObjCTypes:types] : nil;
     if (!signature || signature.numberOfArguments != 3 ||
@@ -673,7 +651,6 @@ static void ACInstallFeatureContentBorrowing(void) {
 
 - (unsigned int)productID {
     unsigned int productID = %orig;
-    AC_LOG(@"CBDevice productID=0x%x", productID);
     uint32_t mapped = ACMapUIAccessoryProductID(productID);
     if (mapped != productID) {
         objc_setAssociatedObject(self, ACOriginalUIProductIDKey, @(productID),
@@ -697,7 +674,6 @@ static void ACInstallFeatureContentBorrowing(void) {
 %hook CBProductInfo
 
 + (id)productInfoWithProductID:(unsigned int)productID {
-    AC_LOG(@"CBProductInfo request=0x%x", productID);
     return %orig(ACMapUIAccessoryProductID(productID));
 }
 
@@ -721,7 +697,6 @@ static void ACInstallFeatureContentBorrowing(void) {
         gHookedUIProductIDClasses = [NSMutableSet set];
         gHookedUIProductNameClasses = [NSMutableSet set];
         gHookedUIModelNameClasses = [NSMutableSet set];
-        gDumpedMethodClasses = [NSMutableSet set];
         gOriginalUIIconIMPs = [NSMutableDictionary dictionary];
         gHookedUIIconClasses = [NSMutableSet set];
         ACLoadConfig();

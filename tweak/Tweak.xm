@@ -1,4 +1,4 @@
-﻿// AirPodsCompat - backport recent AirPods model support to older iOS.
+// AirPodsCompat - backport recent AirPods model support to older iOS.
 //
 // Safety model (v0.3):
 //   * default scope is "core": only recent generations that older iOS lacks

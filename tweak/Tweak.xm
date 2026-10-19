@@ -68,6 +68,7 @@ static NSMutableDictionary<NSString *, NSValue *> *gOriginalUIIconIMPs;
 static NSMutableSet<NSString *> *gHookedUIIconClasses;
 static NSMutableDictionary<NSString *, NSValue *> *gOriginalMediaIsAirPodsIMPs;
 static NSMutableSet<NSString *> *gHookedMediaIsAirPodsClasses;
+static NSMutableSet<NSString *> *gDumpedMethodClasses;
 static NSMutableSet<NSNumber *> *gLoggedUIMappings;
 static NSMutableDictionary<NSString *, NSValue *> *gOriginalUIProductIDIMPs;
 static NSMutableDictionary<NSString *, NSValue *> *gOriginalUIProductNameIMPs;
@@ -466,6 +467,22 @@ static void ACHookUIIconClass(NSString *className) {
     }
 }
 
+static void ACDumpMethods(Class cls) {
+    NSString *className = NSStringFromClass(cls);
+    if (!cls || [gDumpedMethodClasses containsObject:className]) {
+        return;
+    }
+    [gDumpedMethodClasses addObject:className];
+    unsigned int count = 0;
+    Method *methods = class_copyMethodList(cls, &count);
+    for (unsigned int i = 0; i < count; i++) {
+        AC_LOG(@"method %@ %@ %s", className,
+               NSStringFromSelector(method_getName(methods[i])),
+               method_getTypeEncoding(methods[i]));
+    }
+    free(methods);
+}
+
 static BOOL AC_MediaIsAirPods(id self, SEL _cmd) {
     NSValue *value = ACOriginalIMPForObject(gOriginalMediaIsAirPodsIMPs, self);
     BOOL original = value ? ((BOOL (*)(id, SEL))value.pointerValue)(self, _cmd) : NO;
@@ -519,6 +536,12 @@ static void ACInstallLazyUIHooks(void) {
     ACHookMediaIsAirPodsClass(@"MRAVConcreteOutputDevice");
     ACHookMediaIsAirPodsClass(@"MRAVDistantOutputDevice");
     ACHookMediaIsAirPodsClass(@"MPAVOutputDevice");
+    ACDumpMethods(objc_getClass("MRAVOutputDevice"));
+    ACDumpMethods(objc_getClass("MPAVOutputDevice"));
+    ACDumpMethods(objc_getClass("MRUOutputDeviceAsset"));
+    ACDumpMethods(objc_getClass("MRUOutputDeviceAssetView"));
+    ACDumpMethods(objc_getClass("MRUSystemOutputDeviceRouteController"));
+    ACDumpMethods(objc_getClass("MRUOutputContextController"));
     ACHookUIProductIDClass(@"BluetoothDevice");
     ACHookUIProductIDClass(@"BTSDevice");
     ACHookUIProductIDClass(@"CUBluetoothDevice");
@@ -784,6 +807,7 @@ static void ACInstallFeatureContentBorrowing(void) {
         gHookedUIIconClasses = [NSMutableSet set];
         gOriginalMediaIsAirPodsIMPs = [NSMutableDictionary dictionary];
         gHookedMediaIsAirPodsClasses = [NSMutableSet set];
+        gDumpedMethodClasses = [NSMutableSet set];
         ACLoadConfig();
         if (!gEnabled) {
             AC_LOG(@"disabled via prefs");

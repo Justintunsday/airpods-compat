@@ -7,9 +7,17 @@ int main(void) {
         assert(ACBatteryResourcePID(targets[i], 1, 3) == 0x2013);
         assert(ACBatteryResourcePID(targets[i], 76, 3) == targets[i]);
         assert(ACBatteryResourcePID(targets[i], 1, 2) == targets[i]);
+        assert(ACBatteryResourceParts(targets[i], 76, 3, 0) == 0);
+        assert(ACBatteryResourceParts(targets[i], 1, 2, 0) == 0);
+        assert(ACBatteryResourceParts(targets[i], 1, 3, 0) == (i < 4 ? 3 : 4));
+        for (unsigned long parts = 1; parts <= 16; parts++)
+            assert(ACBatteryResourceParts(targets[i], 1, 3, parts) == parts);
     }
     for (uint32_t pid = 0; pid <= 0xffff; ++pid) {
-        if (!ACIsAirPods5Resource(pid)) assert(ACBatteryResourcePID(pid, 1, 3) == pid);
+        if (!ACIsAirPods5Resource(pid)) {
+            assert(ACBatteryResourcePID(pid, 1, 3) == pid);
+            assert(ACBatteryResourceParts(pid, 1, 3, 0) == 0);
+        }
     }
     assert(ACIsAirPods5RouteModel("BTHeadphones76,8246"));
     assert(ACIsAirPods5RouteModel("BTHeadphones76,8247"));

@@ -10,8 +10,8 @@
             "bluetoothuserd",
             "bluetoothaudiod",
             "uarpd",
-            "HeadphoneProxService"
-            ,"MusicUIService"
+            "HeadphoneProxService",
+            "MusicUIService"
         );
     };
 }

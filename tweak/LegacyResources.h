@@ -1,4 +1,4 @@
-// Included by Tweak.xm after config/helpers. All hooks are SpringBoard/iOS 16 only.
+// Included by Tweak.xm after config/helpers. UI resources only, iOS 16.
 #import "LegacyResourcePolicy.h"
 #import <objc/message.h>
 
@@ -82,10 +82,11 @@ static id ACBatteryGlyphName(id self, SEL cmd, BOOL *isImage) {
 
     Class cls = objc_getClass("BCBatteryDevice");
     NSUInteger parts = ((NSUInteger (*)(id, SEL))objc_msgSend)(self, @selector(parts));
+    NSUInteger resourceParts = ACBatteryResourceParts((uint32_t)pid, vendor, transport, parts);
     // A disposable resource model: never replace/merge the live battery device.
     id resource = ((id (*)(id, SEL, id, NSInteger, NSInteger, NSUInteger, id))objc_msgSend)(
         cls, @selector(batteryDeviceWithIdentifier:vendor:productIdentifier:parts:matchIdentifier:),
-        @"AirPodsCompat-resource", vendor, (NSInteger)mapped, parts, @"AirPodsCompat-resource");
+        @"AirPodsCompat-resource", vendor, (NSInteger)mapped, resourceParts, @"AirPodsCompat-resource");
     if (!resource) return original;
     NSUInteger category = ((NSUInteger (*)(id, SEL))objc_msgSend)(self, @selector(accessoryCategory));
     ((void (*)(id, SEL, NSInteger))objc_msgSend)(resource, @selector(setTransportType:), transport);

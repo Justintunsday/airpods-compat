@@ -23,3 +23,11 @@ static inline bool ACIsAirPods5RouteModel(const char *model) {
 static inline uint32_t ACBatteryResourcePID(uint32_t pid, long vendor, long transport) {
     return vendor == 1 && transport == 3 && ACIsAirPods5Resource(pid) ? 0x2013 : pid;
 }
+
+static inline unsigned long ACBatteryResourceParts(uint32_t pid, long vendor,
+                                                  long transport, unsigned long parts) {
+    if (ACBatteryResourcePID(pid, vendor, transport) == pid || parts) return parts;
+    // Legacy glyph factories have no model-specific image for Single (parts 0).
+    // Select a combined earbud glyph, or a case glyph only for a known case PID.
+    return ACIsAirPods5Bud(pid) ? 3 : 4;
+}

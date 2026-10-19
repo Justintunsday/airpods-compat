@@ -370,6 +370,11 @@ static void ACInstallLazyUIHooks(void) {
     ACHookUIModelNameClass(@"BTSDeviceConfigController");
     ACHookUIModelNameClass(@"BluetoothDevice");
     ACHookUIModelNameClass(@"BTSDevice");
+    ACDumpMethods(objc_getClass("HPSHeadphoneConfigController"));
+    ACDumpMethods(objc_getClass("HPSProductUtils"));
+    ACDumpMethods(objc_getClass("HPSBatteryStatusView"));
+    ACDumpMethods(objc_getClass("BTSDevicesController"));
+    ACDumpMethods(objc_getClass("HPSDevice"));
 }
 
 static void ACImageAdded(const struct mach_header *mh, intptr_t slide) {

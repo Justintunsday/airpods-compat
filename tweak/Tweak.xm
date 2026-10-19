@@ -444,7 +444,7 @@ static void ACHookUIIconClass(NSString *className) {
             IMP original = NULL;
             MSHookMessageEx(cls, sel, (IMP)AC_BatteryProductIDString, &original);
             if (original) {
-                orig_BatteryProductIDString = (void *)original;
+                orig_BatteryProductIDString = (id (*)(id, SEL))original;
                 hooked = YES;
                 AC_LOG(@"hooked %@ getProductIDString", className);
             }

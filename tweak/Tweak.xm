@@ -73,6 +73,7 @@ static void *ACAssetAirPodsKey = &ACAssetAirPodsKey;
 static id (*orig_AssetInitRoute)(id, SEL, id);
 static id (*orig_AssetIcon)(id, SEL);
 static NSMutableSet<NSNumber *> *gLoggedUIMappings;
+static NSMutableSet<NSNumber *> *gLoggedDaemonMappings;
 static NSMutableDictionary<NSString *, NSValue *> *gOriginalUIProductIDIMPs;
 static NSMutableDictionary<NSString *, NSValue *> *gOriginalUIProductNameIMPs;
 static NSMutableDictionary<NSString *, NSValue *> *gOriginalUIModelNameIMPs;
@@ -190,6 +191,36 @@ static uint32_t ACMapUIAccessoryProductID(uint32_t productID) {
         return gLegacyUIProductID;
     }
     return productID;
+}
+
+static BOOL ACIsBluetoothDaemon(void) {
+    NSString *name = ACProcessName();
+    return [name isEqualToString:@"bluetoothd"] ||
+           [name isEqualToString:@"bluetoothuserd"] ||
+           [name isEqualToString:@"bluetoothaudiod"];
+}
+
+static uint32_t ACMapDaemonProductID(uint32_t productID) {
+    if (!gEnabled) {
+        return productID;
+    }
+    for (size_t i = 0; i < sizeof(kAirPods5ProductIDs) / sizeof(kAirPods5ProductIDs[0]); i++) {
+        if (kAirPods5ProductIDs[i] == productID) {
+            if (![gLoggedDaemonMappings containsObject:@(productID)]) {
+                [gLoggedDaemonMappings addObject:@(productID)];
+                AC_LOG(@"bluetoothd mapping 0x%x -> 0x%x", productID, kAirPodsPro2ProductID);
+            }
+            return kAirPodsPro2ProductID;
+        }
+    }
+    return productID;
+}
+
+static uint32_t ACMapProductIDForProcess(uint32_t productID) {
+    if (ACIsBluetoothDaemon()) {
+        return ACMapDaemonProductID(productID);
+    }
+    return ACMapUIAccessoryProductID(productID);
 }
 
 static uint32_t ACMapUIIconProductID(uint32_t productID) {
@@ -832,7 +863,7 @@ static void ACInstallFeatureContentBorrowing(void) {
 
 - (unsigned int)productID {
     unsigned int productID = %orig;
-    uint32_t mapped = ACMapUIAccessoryProductID(productID);
+    uint32_t mapped = ACMapProductIDForProcess(productID);
     if (mapped != productID) {
         objc_setAssociatedObject(self, ACOriginalUIProductIDKey, @(productID),
                                  OBJC_ASSOCIATION_RETAIN_NONATOMIC);
@@ -855,7 +886,7 @@ static void ACInstallFeatureContentBorrowing(void) {
 %hook CBProductInfo
 
 + (id)productInfoWithProductID:(unsigned int)productID {
-    return %orig(ACMapUIAccessoryProductID(productID));
+    return %orig(ACMapProductIDForProcess(productID));
 }
 
 %end
@@ -872,6 +903,7 @@ static void ACInstallFeatureContentBorrowing(void) {
 %ctor {
     @autoreleasepool {
         gLoggedUIMappings = [NSMutableSet set];
+        gLoggedDaemonMappings = [NSMutableSet set];
         gOriginalUIProductIDIMPs = [NSMutableDictionary dictionary];
         gOriginalUIProductNameIMPs = [NSMutableDictionary dictionary];
         gOriginalUIModelNameIMPs = [NSMutableDictionary dictionary];

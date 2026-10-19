@@ -314,9 +314,20 @@ static id AC_UIModelName(id self, SEL _cmd, id device) {
         return nil;
     }
     id name = ((id (*)(id, SEL, id))value.pointerValue)(self, _cmd, device);
-    AC_LOG(@"getModelName class=%@ device=%@ original=%@",
-           NSStringFromClass([self class]), NSStringFromClass([device class]), name);
-    return name;
+    NSString *mappedName = nil;
+    if ([name isKindOfClass:[NSString class]]) {
+        NSString *key = (NSString *)name;
+        if ([key isEqualToString:@"ACCESSORY_MODEL_NAME_54"] ||
+            [key isEqualToString:@"ACCESSORY_MODEL_NAME_55"]) {
+            mappedName = @"AirPods 5";
+        } else if ([key isEqualToString:@"ACCESSORY_MODEL_NAME_48"] ||
+                   [key isEqualToString:@"ACCESSORY_MODEL_NAME_50"]) {
+            mappedName = @"AirPods 5 (Wireless Charging)";
+        }
+    }
+    AC_LOG(@"getModelName class=%@ device=%@ original=%@ mapped=%@",
+           NSStringFromClass([self class]), NSStringFromClass([device class]), name, mappedName);
+    return mappedName ?: name;
 }
 
 static void ACHookUIModelNameClass(NSString *className) {

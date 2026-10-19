@@ -551,6 +551,24 @@ static id AC_AssetInitRoute(id self, SEL _cmd, id route) {
     AC_LOG(@"MRUOutputDeviceAsset init route=%@ name=%@ modelID=%@ outputDevice=%@ airpods=%d",
            NSStringFromClass([route class]), name, modelID,
            outputDevice ? NSStringFromClass([outputDevice class]) : nil, airpods);
+    NSArray *devices = nil;
+    @try {
+        devices = [route valueForKey:@"outputDevices"];
+    } @catch (__unused NSException *exception) {
+    }
+    for (id routeDevice in devices) {
+        NSString *deviceName = nil;
+        NSString *deviceModel = nil;
+        id deviceType = nil;
+        @try {
+            deviceName = [routeDevice valueForKey:@"name"];
+            deviceModel = [routeDevice valueForKey:@"modelID"];
+            deviceType = [routeDevice valueForKey:@"deviceType"];
+        } @catch (__unused NSException *exception) {
+        }
+        AC_LOG(@"MRUOutputDeviceAsset routeDevice class=%@ name=%@ modelID=%@ deviceType=%@",
+               NSStringFromClass([routeDevice class]), deviceName, deviceModel, deviceType);
+    }
     return asset;
 }
 
@@ -594,6 +612,7 @@ static void ACInstallLazyUIHooks(void) {
     ACHookMediaIsAirPodsClass(@"MPAVOutputDevice");
     ACDumpMethods(objc_getClass("MRAVOutputDevice"));
     ACDumpMethods(objc_getClass("MPAVOutputDevice"));
+    ACDumpMethods(objc_getClass("MPAVOutputDeviceRoute"));
     ACDumpMethods(objc_getClass("MRUOutputDeviceAsset"));
     ACDumpMethods(objc_getClass("MRUOutputDeviceAssetView"));
     ACDumpMethods(objc_getClass("MRUSystemOutputDeviceRouteController"));

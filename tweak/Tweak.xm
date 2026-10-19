@@ -112,7 +112,7 @@ static void ACLoadConfig(void) {
         gBorrowProductID = kAirPods4AncProductID;
     }
 
-    gLegacyUIProductID = kAirPodsPro2ProductID;
+    gLegacyUIProductID = 0x2013;
     gLegacyUIProfileEnabled =
         NSProcessInfo.processInfo.operatingSystemVersion.majorVersion < 18;
     NSString *legacyUI = prefs[@"LegacyUIProfile"];
@@ -121,6 +121,9 @@ static void ACLoadConfig(void) {
     } else if ([legacyUI isEqualToString:@"airpods4anc"]) {
         gLegacyUIProfileEnabled = YES;
         gLegacyUIProductID = kAirPods4AncProductID;
+    } else if ([legacyUI isEqualToString:@"airpods3"]) {
+        gLegacyUIProfileEnabled = YES;
+        gLegacyUIProductID = 0x2013;
     } else if ([legacyUI isEqualToString:@"airpodspro2"] || [legacyUI isEqualToString:@"pro2"]) {
         gLegacyUIProfileEnabled = YES;
         gLegacyUIProductID = kAirPodsPro2ProductID;

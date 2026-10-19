@@ -897,7 +897,50 @@ static void ACInstallFeatureContentBorrowing(void) {
 @interface CBAccessoryLogging : NSObject
 @end
 
+static NSDictionary *ACMapCBDeviceDictionary(NSDictionary *dictionary) {
+    if (![dictionary isKindOfClass:[NSDictionary class]]) {
+        return dictionary;
+    }
+    NSMutableDictionary *mapped = [dictionary mutableCopy];
+    for (NSString *key in @[@"ppPI", @"proximityPairingProductID", @"productID"]) {
+        id value = mapped[key];
+        uint32_t productID = 0;
+        BOOL hasProductID = NO;
+        if ([value isKindOfClass:[NSNumber class]]) {
+            productID = [value unsignedIntValue];
+            hasProductID = YES;
+        } else if ([value isKindOfClass:[NSString class]]) {
+            productID = (uint32_t)strtoul([value UTF8String], NULL, 0);
+            hasProductID = YES;
+        }
+        if (hasProductID) {
+            uint32_t mappedProductID = ACMapProductIDForProcess(productID);
+            if (mappedProductID != productID) {
+                mapped[key] = @(mappedProductID);
+                AC_LOG(@"CBDevice dictionary %@ 0x%x -> 0x%x", key, productID, mappedProductID);
+            }
+        }
+    }
+    return mapped;
+}
+
 %hook CBDevice
+
+- (id)initWithDictionary:(NSDictionary *)dictionary error:(NSError **)error {
+    return %orig(ACMapCBDeviceDictionary(dictionary), error);
+}
+
+- (id)initWithDictionary:(NSDictionary *)dictionary {
+    return %orig(ACMapCBDeviceDictionary(dictionary));
+}
+
+- (void)setProductID:(unsigned int)productID {
+    %orig(ACMapProductIDForProcess(productID));
+}
+
+- (void)setProximityPairingProductID:(unsigned int)productID {
+    %orig(ACMapProductIDForProcess(productID));
+}
 
 - (unsigned int)productID {
     unsigned int productID = %orig;

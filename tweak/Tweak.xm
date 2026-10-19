@@ -223,6 +223,43 @@ static uint32_t ACMapProductIDForProcess(uint32_t productID) {
     return ACMapUIAccessoryProductID(productID);
 }
 
+typedef int (*ACBTDeviceGetDeviceId)(void *device, uint32_t *vendorIDSource,
+                                     uint32_t *vendorID, uint32_t *productID,
+                                     uint32_t *version);
+static ACBTDeviceGetDeviceId orig_BTDeviceGetDeviceId;
+
+static int AC_BTDeviceGetDeviceId(void *device, uint32_t *vendorIDSource,
+                                  uint32_t *vendorID, uint32_t *productID,
+                                  uint32_t *version) {
+    int result = orig_BTDeviceGetDeviceId
+        ? orig_BTDeviceGetDeviceId(device, vendorIDSource, vendorID, productID, version)
+        : -1;
+    if (productID && *productID) {
+        uint32_t original = *productID;
+        uint32_t mapped = ACMapDaemonProductID(original);
+        if (mapped != original) {
+            AC_LOG(@"BTDeviceGetDeviceId productID 0x%x -> 0x%x", original, mapped);
+            *productID = mapped;
+        }
+    }
+    return result;
+}
+
+static void ACInstallBluetoothDaemonHook(void) {
+    void *symbol = dlsym(RTLD_DEFAULT, "BTDeviceGetDeviceId");
+    if (!symbol) {
+        symbol = dlsym(RTLD_DEFAULT,
+                       "__ZN24MobileBluetoothInterface19BTDeviceGetDeviceIdEP12BTDeviceImplPjS2_S2_S2_");
+    }
+    if (!symbol) {
+        AC_LOG(@"BTDeviceGetDeviceId not found in %@", ACProcessName());
+        return;
+    }
+    MSHookFunction(symbol, (void *)AC_BTDeviceGetDeviceId,
+                   (void **)&orig_BTDeviceGetDeviceId);
+    AC_LOG(@"hooked BTDeviceGetDeviceId in %@", ACProcessName());
+}
+
 static uint32_t ACMapUIIconProductID(uint32_t productID) {
     static const uint32_t iconProductIDs[] = {
         0x2036, 0x2030, 0x2037, 0x2032, 0x2035, 0x13a5, 0x13a4
@@ -929,6 +966,10 @@ static void ACInstallFeatureContentBorrowing(void) {
         if (!gEnabled) {
             AC_LOG(@"disabled via prefs");
             return;
+        }
+
+        if (ACIsBluetoothDaemon()) {
+            ACInstallBluetoothDaemonHook();
         }
 
         if (ACIsUIProcess() && (gLegacyUIProfileEnabled || gLegacyIconProfileEnabled)) {

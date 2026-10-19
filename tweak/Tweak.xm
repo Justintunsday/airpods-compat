@@ -1,4 +1,4 @@
-// AirPodsCompat - backport recent AirPods model support to older iOS.
+﻿// AirPodsCompat - backport recent AirPods model support to older iOS.
 //
 // Safety model (v0.3):
 //   * default scope is "core": only recent generations that older iOS lacks
@@ -246,7 +246,7 @@ static void ACHookUIProductIDClass(NSString *className) {
     IMP original = NULL;
     MSHookMessageEx(cls, sel, (IMP)AC_UIProductID, &original);
     if (original) {
-        gOriginalUIProductIDIMPs[className] = [NSValue valueWithPointer:original];
+        gOriginalUIProductIDIMPs[className] = [NSValue valueWithPointer:(void *)original];
         [gHookedUIProductIDClasses addObject:className];
         AC_LOG(@"hooked %@ productID", className);
     }
@@ -272,7 +272,7 @@ static void ACHookUIProductNameClass(NSString *className) {
     IMP original = NULL;
     MSHookMessageEx(cls, sel, (IMP)AC_UIProductName, &original);
     if (original) {
-        gOriginalUIProductNameIMPs[className] = [NSValue valueWithPointer:original];
+        gOriginalUIProductNameIMPs[className] = [NSValue valueWithPointer:(void *)original];
         [gHookedUIProductNameClasses addObject:className];
         AC_LOG(@"hooked %@ productName", className);
     }
@@ -314,7 +314,7 @@ static void ACHookUIModelNameClass(NSString *className) {
     IMP original = NULL;
     MSHookMessageEx(cls, sel, (IMP)AC_UIModelName, &original);
     if (original) {
-        gOriginalUIModelNameIMPs[className] = [NSValue valueWithPointer:original];
+        gOriginalUIModelNameIMPs[className] = [NSValue valueWithPointer:(void *)original];
         [gHookedUIModelNameClasses addObject:className];
         AC_LOG(@"hooked %@ getModelName:", className);
     }

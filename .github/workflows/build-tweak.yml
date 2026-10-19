@@ -18,6 +18,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Test UI resource policy
+        run: |
+          clang -std=c11 -Wall -Wextra -Werror tests/legacy_resource_policy.c -o /tmp/ac-policy-tests
+          /tmp/ac-policy-tests
+
       - name: Install toolchain
         run: |
           brew install ldid xz || true

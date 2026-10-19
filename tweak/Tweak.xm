@@ -44,7 +44,8 @@
 #define ROOT_PATH_NS(p) (p)
 #endif
 
-#define AC_LOG(fmt, ...) NSLog(@"[AirPodsCompat] " fmt, ##__VA_ARGS__)
+static BOOL gDiagnosticLogs = NO;
+#define AC_LOG(fmt, ...) do { if (gDiagnosticLogs) NSLog(@"[AirPodsCompat] " fmt, ##__VA_ARGS__); } while (0)
 
 static NSDictionary *gConfig;
 static BOOL gEnabled = YES;
@@ -66,14 +67,9 @@ static BOOL gLegacyIconProfileEnabled = NO;
 static uint32_t gLegacyIconProductID = 0x2013;
 static NSMutableDictionary<NSString *, NSValue *> *gOriginalUIIconIMPs;
 static NSMutableSet<NSString *> *gHookedUIIconClasses;
-static NSMutableDictionary<NSString *, NSValue *> *gOriginalMediaIsAirPodsIMPs;
-static NSMutableSet<NSString *> *gHookedMediaIsAirPodsClasses;
-static NSMutableSet<NSString *> *gDumpedMethodClasses;
-static void *ACAssetAirPodsKey = &ACAssetAirPodsKey;
-static id (*orig_AssetInitRoute)(id, SEL, id);
-static id (*orig_AssetIcon)(id, SEL);
+static BOOL gRouteResourcesEnabled = YES;
+static BOOL gBatteryResourcesEnabled = YES;
 static NSMutableSet<NSNumber *> *gLoggedUIMappings;
-static NSMutableSet<NSNumber *> *gLoggedDaemonMappings;
 static NSMutableDictionary<NSString *, NSValue *> *gOriginalUIProductIDIMPs;
 static NSMutableDictionary<NSString *, NSValue *> *gOriginalUIProductNameIMPs;
 static NSMutableDictionary<NSString *, NSValue *> *gOriginalUIModelNameIMPs;
@@ -100,6 +96,7 @@ static void ACLoadConfig(void) {
     gConfig = [NSDictionary dictionaryWithContentsOfFile:ACSupportPath(@"AirPodsCompatModels.plist")] ?: @{};
 
     NSDictionary *prefs = [NSDictionary dictionaryWithContentsOfFile:ACPrefsPath()];
+    gDiagnosticLogs = [prefs[@"DiagnosticsEnabled"] boolValue];
     if (prefs[@"Enabled"]) {
         gEnabled = [prefs[@"Enabled"] boolValue];
     }
@@ -107,6 +104,8 @@ static void ACLoadConfig(void) {
         gUARPEnabled = [prefs[@"UARPEnabled"] boolValue];
     }
     gScopeAll = [prefs[@"Scope"] isEqualToString:@"all"];
+    if (prefs[@"LegacyRouteResourcesEnabled"]) gRouteResourcesEnabled = [prefs[@"LegacyRouteResourcesEnabled"] boolValue];
+    if (prefs[@"LegacyBatteryResourcesEnabled"]) gBatteryResourcesEnabled = [prefs[@"LegacyBatteryResourcesEnabled"] boolValue];
 
     NSString *borrow = prefs[@"BorrowProfile"];
     if ([borrow isEqualToString:@"off"]) {
@@ -177,7 +176,7 @@ static BOOL ACIsUIProcess(void) {
 }
 
 static uint32_t ACMapUIAccessoryProductID(uint32_t productID) {
-    if (!gEnabled || !gLegacyUIProfileEnabled || !ACIsUIProcess()) {
+    if (!gEnabled || !gLegacyUIProfileEnabled || ![ACProcessName() isEqualToString:@"Preferences"]) {
         return productID;
     }
     for (size_t i = 0; i < sizeof(kAirPods5ProductIDs) / sizeof(kAirPods5ProductIDs[0]); i++) {
@@ -191,73 +190,6 @@ static uint32_t ACMapUIAccessoryProductID(uint32_t productID) {
         return gLegacyUIProductID;
     }
     return productID;
-}
-
-static BOOL ACIsBluetoothDaemon(void) {
-    NSString *name = ACProcessName();
-    return [name isEqualToString:@"bluetoothd"] ||
-           [name isEqualToString:@"bluetoothuserd"] ||
-           [name isEqualToString:@"bluetoothaudiod"];
-}
-
-static uint32_t ACMapDaemonProductID(uint32_t productID) {
-    if (!gEnabled) {
-        return productID;
-    }
-    for (size_t i = 0; i < sizeof(kAirPods5ProductIDs) / sizeof(kAirPods5ProductIDs[0]); i++) {
-        if (kAirPods5ProductIDs[i] == productID) {
-            if (![gLoggedDaemonMappings containsObject:@(productID)]) {
-                [gLoggedDaemonMappings addObject:@(productID)];
-                AC_LOG(@"bluetoothd mapping 0x%x -> 0x%x", productID, kAirPodsPro2ProductID);
-            }
-            return kAirPodsPro2ProductID;
-        }
-    }
-    return productID;
-}
-
-static uint32_t ACMapProductIDForProcess(uint32_t productID) {
-    if (ACIsBluetoothDaemon()) {
-        return ACMapDaemonProductID(productID);
-    }
-    return ACMapUIAccessoryProductID(productID);
-}
-
-typedef int (*ACBTDeviceGetDeviceId)(void *device, uint32_t *vendorIDSource,
-                                     uint32_t *vendorID, uint32_t *productID,
-                                     uint32_t *version);
-static ACBTDeviceGetDeviceId orig_BTDeviceGetDeviceId;
-
-static int AC_BTDeviceGetDeviceId(void *device, uint32_t *vendorIDSource,
-                                  uint32_t *vendorID, uint32_t *productID,
-                                  uint32_t *version) {
-    int result = orig_BTDeviceGetDeviceId
-        ? orig_BTDeviceGetDeviceId(device, vendorIDSource, vendorID, productID, version)
-        : -1;
-    if (productID && *productID && ACIsBluetoothDaemon()) {
-        uint32_t original = *productID;
-        uint32_t mapped = ACMapDaemonProductID(original);
-        if (mapped != original) {
-            AC_LOG(@"BTDeviceGetDeviceId productID 0x%x -> 0x%x", original, mapped);
-            *productID = mapped;
-        }
-    }
-    return result;
-}
-
-static void ACInstallBluetoothDaemonHook(void) {
-    void *symbol = dlsym(RTLD_DEFAULT, "BTDeviceGetDeviceId");
-    if (!symbol) {
-        symbol = dlsym(RTLD_DEFAULT,
-                       "__ZN24MobileBluetoothInterface19BTDeviceGetDeviceIdEP12BTDeviceImplPjS2_S2_S2_");
-    }
-    if (!symbol) {
-        AC_LOG(@"BTDeviceGetDeviceId not found in %@", ACProcessName());
-        return;
-    }
-    MSHookFunction(symbol, (void *)AC_BTDeviceGetDeviceId,
-                   (void **)&orig_BTDeviceGetDeviceId);
-    AC_LOG(@"hooked BTDeviceGetDeviceId in %@", ACProcessName());
 }
 
 static uint32_t ACMapUIIconProductID(uint32_t productID) {
@@ -418,8 +350,6 @@ static id AC_UIModelName(id self, SEL _cmd, id device) {
             mappedName = @"AirPods 5 (Wireless Charging)";
         }
     }
-    AC_LOG(@"getModelName class=%@ device=%@ original=%@ mapped=%@",
-           NSStringFromClass([self class]), NSStringFromClass([device class]), name, mappedName);
     return mappedName ?: name;
 }
 
@@ -470,8 +400,6 @@ static id AC_UIIconProductID(id self, SEL _cmd, unsigned int productID) {
     }
     unsigned int mapped = ACMapUIIconProductID(productID);
     id result = ((id (*)(id, SEL, unsigned int))value.pointerValue)(self, _cmd, mapped);
-    AC_LOG(@"icon %@ pid=0x%x mapped=0x%x result=%@",
-           NSStringFromSelector(_cmd), productID, mapped, result);
     return result;
 }
 
@@ -538,153 +466,11 @@ static void ACHookUIIconClass(NSString *className) {
     }
 }
 
-static void ACDumpMethods(Class cls) {
-    NSString *className = NSStringFromClass(cls);
-    if (!cls || [gDumpedMethodClasses containsObject:className]) {
-        return;
-    }
-    [gDumpedMethodClasses addObject:className];
-    unsigned int count = 0;
-    Method *methods = class_copyMethodList(cls, &count);
-    for (unsigned int i = 0; i < count; i++) {
-        AC_LOG(@"method %@ %@ %s", className,
-               NSStringFromSelector(method_getName(methods[i])),
-               method_getTypeEncoding(methods[i]));
-    }
-    free(methods);
-}
-
-static BOOL AC_MediaIsAirPods(id self, SEL _cmd) {
-    NSValue *value = ACOriginalIMPForObject(gOriginalMediaIsAirPodsIMPs, self);
-    BOOL original = value ? ((BOOL (*)(id, SEL))value.pointerValue)(self, _cmd) : NO;
-    NSString *name = nil;
-    NSString *modelID = nil;
-    @try {
-        name = [self valueForKey:@"name"];
-        modelID = [self valueForKey:@"modelID"];
-    } @catch (__unused NSException *exception) {
-    }
-    BOOL matches = [name isKindOfClass:[NSString class]] &&
-                   ([name containsString:@"AirPods"] || [name containsString:@"AirPods 5"]);
-    if (!original && matches) {
-        AC_LOG(@"MRAVOutputDevice isAirPods -> YES name=%@ modelID=%@", name, modelID);
-        return YES;
-    }
-    return original;
-}
-
-static void ACHookMediaIsAirPodsClass(NSString *className) {
-    if ([gHookedMediaIsAirPodsClasses containsObject:className]) {
-        return;
-    }
-    Class cls = objc_getClass(className.UTF8String);
-    if (!cls) {
-        return;
-    }
-    SEL sel = sel_registerName("isAirPods");
-    Method method = class_getInstanceMethod(cls, sel);
-    if (!method) {
-        return;
-    }
-    const char *types = method_getTypeEncoding(method);
-    NSMethodSignature *signature = types ? [NSMethodSignature signatureWithObjCTypes:types] : nil;
-    if (!signature || signature.numberOfArguments != 2 ||
-        (signature.methodReturnType[0] != 'B' && signature.methodReturnType[0] != 'c')) {
-        return;
-    }
-    IMP original = NULL;
-    MSHookMessageEx(cls, sel, (IMP)AC_MediaIsAirPods, &original);
-    if (original) {
-        gOriginalMediaIsAirPodsIMPs[className] = [NSValue valueWithPointer:(void *)original];
-        [gHookedMediaIsAirPodsClasses addObject:className];
-        AC_LOG(@"hooked %@ isAirPods", className);
-    }
-}
-
-static id AC_AssetInitRoute(id self, SEL _cmd, id route) {
-    id asset = orig_AssetInitRoute ? orig_AssetInitRoute(self, _cmd, route) : nil;
-    NSString *name = nil;
-    NSString *modelID = nil;
-    id outputDevice = nil;
-    @try {
-        name = [route valueForKey:@"name"];
-        modelID = [route valueForKey:@"modelID"];
-        outputDevice = [route valueForKey:@"outputDevice"];
-    } @catch (__unused NSException *exception) {
-    }
-    BOOL airpods = [name isKindOfClass:[NSString class]] && [name containsString:@"AirPods"];
-    if (airpods) {
-        objc_setAssociatedObject(asset, ACAssetAirPodsKey, @YES, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
-    }
-    AC_LOG(@"MRUOutputDeviceAsset init route=%@ name=%@ modelID=%@ outputDevice=%@ airpods=%d",
-           NSStringFromClass([route class]), name, modelID,
-           outputDevice ? NSStringFromClass([outputDevice class]) : nil, airpods);
-    NSArray *devices = nil;
-    @try {
-        devices = [route valueForKey:@"outputDevices"];
-    } @catch (__unused NSException *exception) {
-    }
-    for (id routeDevice in devices) {
-        NSString *deviceName = nil;
-        NSString *deviceModel = nil;
-        id deviceType = nil;
-        @try {
-            deviceName = [routeDevice valueForKey:@"name"];
-            deviceModel = [routeDevice valueForKey:@"modelID"];
-            deviceType = [routeDevice valueForKey:@"deviceType"];
-        } @catch (__unused NSException *exception) {
-        }
-        AC_LOG(@"MRUOutputDeviceAsset routeDevice class=%@ name=%@ modelID=%@ deviceType=%@",
-               NSStringFromClass([routeDevice class]), deviceName, deviceModel, deviceType);
-    }
-    return asset;
-}
-
-static id AC_AssetIcon(id self, SEL _cmd) {
-    id icon = orig_AssetIcon ? orig_AssetIcon(self, _cmd) : nil;
-    BOOL airpods = [objc_getAssociatedObject(self, ACAssetAirPodsKey) boolValue];
-    AC_LOG(@"MRUOutputDeviceAsset icon class=%@ airpods=%d",
-           icon ? NSStringFromClass([icon class]) : nil, airpods);
-    return icon;
-}
-
-static void ACHookMediaAssetClass(void) {
-    Class cls = objc_getClass("MRUOutputDeviceAsset");
-    if (!cls) {
-        return;
-    }
-    static BOOL hooked = NO;
-    if (hooked) {
-        return;
-    }
-    SEL initSel = sel_registerName("initWithOutputDeviceRoute:");
-    Method initMethod = class_getInstanceMethod(cls, initSel);
-    if (initMethod) {
-        MSHookMessageEx(cls, initSel, (IMP)AC_AssetInitRoute, (IMP *)&orig_AssetInitRoute);
-    }
-    SEL iconSel = sel_registerName("icon");
-    Method iconMethod = class_getInstanceMethod(cls, iconSel);
-    if (iconMethod) {
-        MSHookMessageEx(cls, iconSel, (IMP)AC_AssetIcon, (IMP *)&orig_AssetIcon);
-    }
-    hooked = YES;
-    AC_LOG(@"hooked MRUOutputDeviceAsset init/icon");
-}
+#import "LegacyResources.h"
 
 static void ACInstallLazyUIHooks(void) {
     ACHookUIIconClass(@"HPSBatteryStatusView");
-    ACHookMediaAssetClass();
-    ACHookMediaIsAirPodsClass(@"MRAVOutputDevice");
-    ACHookMediaIsAirPodsClass(@"MRAVConcreteOutputDevice");
-    ACHookMediaIsAirPodsClass(@"MRAVDistantOutputDevice");
-    ACHookMediaIsAirPodsClass(@"MPAVOutputDevice");
-    ACDumpMethods(objc_getClass("MRAVOutputDevice"));
-    ACDumpMethods(objc_getClass("MPAVOutputDevice"));
-    ACDumpMethods(objc_getClass("MPAVOutputDeviceRoute"));
-    ACDumpMethods(objc_getClass("MRUOutputDeviceAsset"));
-    ACDumpMethods(objc_getClass("MRUOutputDeviceAssetView"));
-    ACDumpMethods(objc_getClass("MRUSystemOutputDeviceRouteController"));
-    ACDumpMethods(objc_getClass("MRUOutputContextController"));
+    ACInstallLegacyResources();
     ACHookUIProductIDClass(@"BluetoothDevice");
     ACHookUIProductIDClass(@"BTSDevice");
     ACHookUIProductIDClass(@"CUBluetoothDevice");
@@ -897,54 +683,11 @@ static void ACInstallFeatureContentBorrowing(void) {
 @interface CBAccessoryLogging : NSObject
 @end
 
-static NSDictionary *ACMapCBDeviceDictionary(NSDictionary *dictionary) {
-    if (![dictionary isKindOfClass:[NSDictionary class]]) {
-        return dictionary;
-    }
-    NSMutableDictionary *mapped = [dictionary mutableCopy];
-    for (NSString *key in @[@"ppPI", @"proximityPairingProductID", @"productID"]) {
-        id value = mapped[key];
-        uint32_t productID = 0;
-        BOOL hasProductID = NO;
-        if ([value isKindOfClass:[NSNumber class]]) {
-            productID = [value unsignedIntValue];
-            hasProductID = YES;
-        } else if ([value isKindOfClass:[NSString class]]) {
-            productID = (uint32_t)strtoul([value UTF8String], NULL, 0);
-            hasProductID = YES;
-        }
-        if (hasProductID) {
-            uint32_t mappedProductID = ACMapProductIDForProcess(productID);
-            if (mappedProductID != productID) {
-                mapped[key] = @(mappedProductID);
-                AC_LOG(@"CBDevice dictionary %@ 0x%x -> 0x%x", key, productID, mappedProductID);
-            }
-        }
-    }
-    return mapped;
-}
-
 %hook CBDevice
-
-- (id)initWithDictionary:(NSDictionary *)dictionary error:(NSError **)error {
-    return %orig(ACMapCBDeviceDictionary(dictionary), error);
-}
-
-- (id)initWithDictionary:(NSDictionary *)dictionary {
-    return %orig(ACMapCBDeviceDictionary(dictionary));
-}
-
-- (void)setProductID:(unsigned int)productID {
-    %orig(ACMapProductIDForProcess(productID));
-}
-
-- (void)setProximityPairingProductID:(unsigned int)productID {
-    %orig(ACMapProductIDForProcess(productID));
-}
 
 - (unsigned int)productID {
     unsigned int productID = %orig;
-    uint32_t mapped = ACMapProductIDForProcess(productID);
+    uint32_t mapped = ACMapUIAccessoryProductID(productID);
     if (mapped != productID) {
         objc_setAssociatedObject(self, ACOriginalUIProductIDKey, @(productID),
                                  OBJC_ASSOCIATION_RETAIN_NONATOMIC);
@@ -957,7 +700,7 @@ static NSDictionary *ACMapCBDeviceDictionary(NSDictionary *dictionary) {
 
 - (unsigned int)proximityPairingProductID {
     unsigned int productID = %orig;
-    uint32_t mapped = ACMapProductIDForProcess(productID);
+    uint32_t mapped = ACMapUIAccessoryProductID(productID);
     if (mapped != productID) {
         AC_LOG(@"CBDevice ppPI 0x%x -> 0x%x", productID, mapped);
     }
@@ -976,7 +719,7 @@ static NSDictionary *ACMapCBDeviceDictionary(NSDictionary *dictionary) {
 %hook CBProductInfo
 
 + (id)productInfoWithProductID:(unsigned int)productID {
-    return %orig(ACMapProductIDForProcess(productID));
+    return %orig(ACMapUIAccessoryProductID(productID));
 }
 
 %end
@@ -993,7 +736,6 @@ static NSDictionary *ACMapCBDeviceDictionary(NSDictionary *dictionary) {
 %ctor {
     @autoreleasepool {
         gLoggedUIMappings = [NSMutableSet set];
-        gLoggedDaemonMappings = [NSMutableSet set];
         gOriginalUIProductIDIMPs = [NSMutableDictionary dictionary];
         gOriginalUIProductNameIMPs = [NSMutableDictionary dictionary];
         gOriginalUIModelNameIMPs = [NSMutableDictionary dictionary];
@@ -1002,19 +744,13 @@ static NSDictionary *ACMapCBDeviceDictionary(NSDictionary *dictionary) {
         gHookedUIModelNameClasses = [NSMutableSet set];
         gOriginalUIIconIMPs = [NSMutableDictionary dictionary];
         gHookedUIIconClasses = [NSMutableSet set];
-        gOriginalMediaIsAirPodsIMPs = [NSMutableDictionary dictionary];
-        gHookedMediaIsAirPodsClasses = [NSMutableSet set];
-        gDumpedMethodClasses = [NSMutableSet set];
         ACLoadConfig();
         if (!gEnabled) {
             AC_LOG(@"disabled via prefs");
             return;
         }
 
-        AC_LOG(@"daemonCheck=%@", ACIsBluetoothDaemon() ? @"yes" : @"no");
-        ACInstallBluetoothDaemonHook();
-
-        if (ACIsUIProcess() && (gLegacyUIProfileEnabled || gLegacyIconProfileEnabled)) {
+        if (ACIsUIProcess()) {
             ACInstallLazyUIHooks();
             _dyld_register_func_for_add_image(ACImageAdded);
         }

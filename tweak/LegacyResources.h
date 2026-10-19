@@ -6,6 +6,35 @@ static __thread unsigned int gACRouteResourceDepth;
 static id (*orig_ACRouteModel)(id, SEL);
 static id (*orig_ACResourceAssetInit)(id, SEL, id);
 static id (*orig_ACBatteryGlyphName)(id, SEL, BOOL *);
+static id (*orig_ACRouteSymbol)(id, SEL, id);
+static id (*orig_ACRoutesSymbol)(id, SEL, id);
+static id (*orig_ACRouteImage)(id, SEL, id);
+static id (*orig_ACRoutesImage)(id, SEL, id);
+
+static BOOL ACIsResourceUIProcess(void) {
+    NSString *name = ACProcessName();
+    return [name isEqualToString:@"SpringBoard"] || [name isEqualToString:@"Music"] ||
+           [name isEqualToString:@"MusicUIService"];
+}
+
+static id ACWithRouteResourceScope(id self, SEL cmd, id arg, id (*original)(id, SEL, id)) {
+    gACRouteResourceDepth++;
+    @try { return original(self, cmd, arg); }
+    @finally { gACRouteResourceDepth--; }
+}
+
+static id ACRouteSymbol(id self, SEL cmd, id route) {
+    return ACWithRouteResourceScope(self, cmd, route, orig_ACRouteSymbol);
+}
+static id ACRoutesSymbol(id self, SEL cmd, id routes) {
+    return ACWithRouteResourceScope(self, cmd, routes, orig_ACRoutesSymbol);
+}
+static id ACRouteImage(id self, SEL cmd, id route) {
+    return ACWithRouteResourceScope(self, cmd, route, orig_ACRouteImage);
+}
+static id ACRoutesImage(id self, SEL cmd, id routes) {
+    return ACWithRouteResourceScope(self, cmd, routes, orig_ACRoutesImage);
+}
 
 static BOOL ACSignatureMatches(Class cls, SEL sel, const char *ret, NSArray<NSString *> *args,
                                BOOL classMethod) {
@@ -70,18 +99,37 @@ static id ACBatteryGlyphName(id self, SEL cmd, BOOL *isImage) {
 }
 
 static void ACInstallLegacyResources(void) {
-    if (![ACProcessName() isEqualToString:@"SpringBoard"] ||
+    if (!ACIsResourceUIProcess() ||
         NSProcessInfo.processInfo.operatingSystemVersion.majorVersion != 16) return;
     Class route = objc_getClass("MPAVOutputDeviceRoute");
     Class asset = objc_getClass("MRUOutputDeviceAsset");
-    if (gRouteResourcesEnabled && !orig_ACResourceAssetInit &&
-        ACSignatureMatches(route, @selector(productIdentifier), "@", @[], NO) &&
-        ACSignatureMatches(asset, @selector(initWithOutputDeviceRoute:), "@", @[@"@"], NO)) {
+    if (gRouteResourcesEnabled && !orig_ACRouteModel &&
+        ACSignatureMatches(route, @selector(productIdentifier), "@", @[], NO)) {
         MSHookMessageEx(route, @selector(productIdentifier), (IMP)ACResourceRouteModel,
                         (IMP *)&orig_ACRouteModel);
+    }
+    if (gRouteResourcesEnabled && orig_ACRouteModel && !orig_ACResourceAssetInit &&
+        ACSignatureMatches(asset, @selector(initWithOutputDeviceRoute:), "@", @[@"@"], NO)) {
         MSHookMessageEx(asset, @selector(initWithOutputDeviceRoute:), (IMP)ACResourceAssetInit,
                         (IMP *)&orig_ACResourceAssetInit);
     }
+    Class controller = objc_getClass("MPAVRoutingController");
+    if (gRouteResourcesEnabled && orig_ACRouteModel && controller) {
+        struct { const char *sel; IMP replacement; id (**original)(id, SEL, id); } symbols[] = {
+            {"_symbolNameForRoute:", (IMP)ACRouteSymbol, &orig_ACRouteSymbol},
+            {"_symbolNameForRoutes:", (IMP)ACRoutesSymbol, &orig_ACRoutesSymbol},
+            {"_symbolImageForRoute:", (IMP)ACRouteImage, &orig_ACRouteImage},
+            {"_symbolImageForRoutes:", (IMP)ACRoutesImage, &orig_ACRoutesImage},
+        };
+        for (unsigned i = 0; i < sizeof(symbols)/sizeof(symbols[0]); i++) {
+            SEL sel = sel_registerName(symbols[i].sel);
+            if (!*symbols[i].original && ACSignatureMatches(controller, sel, "@", @[@"@"], YES)) {
+                MSHookMessageEx(object_getClass(controller), sel, symbols[i].replacement,
+                                (IMP *)symbols[i].original);
+            }
+        }
+    }
+    if (![ACProcessName() isEqualToString:@"SpringBoard"]) return;
     Class battery = objc_getClass("BCBatteryDevice");
     if (!gBatteryResourcesEnabled || orig_ACBatteryGlyphName || !battery) return;
     if (!ACSignatureMatches(battery, @selector(batteryWidgetGlyphName:), "@", @[@"^B"], NO) ||

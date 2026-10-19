@@ -470,8 +470,9 @@ static void ACHookUIIconClass(NSString *className) {
 #import "LegacyResources.h"
 
 static void ACInstallLazyUIHooks(void) {
-    ACHookUIIconClass(@"HPSBatteryStatusView");
     ACInstallLegacyResources();
+    if (!ACIsUIProcess()) return;
+    ACHookUIIconClass(@"HPSBatteryStatusView");
     ACHookUIProductIDClass(@"BluetoothDevice");
     ACHookUIProductIDClass(@"BTSDevice");
     ACHookUIProductIDClass(@"CUBluetoothDevice");
@@ -751,7 +752,7 @@ static void ACInstallFeatureContentBorrowing(void) {
             return;
         }
 
-        if (ACIsUIProcess()) {
+        if (ACIsUIProcess() || ACIsResourceUIProcess()) {
             ACInstallLazyUIHooks();
             _dyld_register_func_for_add_image(ACImageAdded);
         }

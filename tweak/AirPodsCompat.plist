@@ -2,6 +2,7 @@
     Filter = {
         Bundles = (
             "com.apple.springboard",
+            "com.apple.Music",
             "com.apple.Preferences"
         );
         Executables = (
@@ -10,6 +11,7 @@
             "bluetoothaudiod",
             "uarpd",
             "HeadphoneProxService"
+            ,"MusicUIService"
         );
     };
 }

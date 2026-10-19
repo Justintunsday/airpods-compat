@@ -853,6 +853,7 @@ static void ACInstallFeatureContentBorrowing(void) {
 
 @interface CBDevice : NSObject
 @property (nonatomic) unsigned int productID;
+@property (nonatomic) unsigned int proximityPairingProductID;
 @property (nonatomic, copy) NSString *productName;
 @end
 
@@ -870,6 +871,15 @@ static void ACInstallFeatureContentBorrowing(void) {
     } else {
         objc_setAssociatedObject(self, ACOriginalUIProductIDKey, nil,
                                  OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+    }
+    return mapped;
+}
+
+- (unsigned int)proximityPairingProductID {
+    unsigned int productID = %orig;
+    uint32_t mapped = ACMapProductIDForProcess(productID);
+    if (mapped != productID) {
+        AC_LOG(@"CBDevice ppPI 0x%x -> 0x%x", productID, mapped);
     }
     return mapped;
 }

@@ -13,8 +13,10 @@ static id (*orig_ACRoutesImage)(id, SEL, id);
 
 static BOOL ACIsResourceUIProcess(void) {
     NSString *name = ACProcessName();
-    return [name isEqualToString:@"SpringBoard"] || [name isEqualToString:@"Music"] ||
-           [name isEqualToString:@"MusicUIService"];
+    if ([name isEqualToString:@"SpringBoard"]) return YES;
+    NSString *path = NSBundle.mainBundle.bundlePath;
+    return objc_getClass("UIApplication") &&
+           ([path hasSuffix:@".app"] || [path hasSuffix:@".appex"]);
 }
 
 static id ACWithRouteResourceScope(id self, SEL cmd, id arg, id (*original)(id, SEL, id)) {

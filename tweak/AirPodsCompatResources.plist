@@ -1,0 +1,10 @@
+{
+    Filter = {
+        Bundles = (
+            "com.apple.MediaPlayer",
+            "com.apple.MediaControls",
+            "com.apple.springboard"
+        );
+        Executables = ("MusicUIService");
+    };
+}

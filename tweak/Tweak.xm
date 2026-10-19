@@ -67,8 +67,6 @@ static BOOL gLegacyIconProfileEnabled = NO;
 static uint32_t gLegacyIconProductID = 0x2013;
 static NSMutableDictionary<NSString *, NSValue *> *gOriginalUIIconIMPs;
 static NSMutableSet<NSString *> *gHookedUIIconClasses;
-static BOOL gRouteResourcesEnabled = YES;
-static BOOL gBatteryResourcesEnabled = YES;
 static NSMutableSet<NSNumber *> *gLoggedUIMappings;
 static NSMutableDictionary<NSString *, NSValue *> *gOriginalUIProductIDIMPs;
 static NSMutableDictionary<NSString *, NSValue *> *gOriginalUIProductNameIMPs;
@@ -105,8 +103,6 @@ static void ACLoadConfig(void) {
         gUARPEnabled = [prefs[@"UARPEnabled"] boolValue];
     }
     gScopeAll = [prefs[@"Scope"] isEqualToString:@"all"];
-    if (prefs[@"LegacyRouteResourcesEnabled"]) gRouteResourcesEnabled = [prefs[@"LegacyRouteResourcesEnabled"] boolValue];
-    if (prefs[@"LegacyBatteryResourcesEnabled"]) gBatteryResourcesEnabled = [prefs[@"LegacyBatteryResourcesEnabled"] boolValue];
 
     NSString *borrow = prefs[@"BorrowProfile"];
     if ([borrow isEqualToString:@"off"]) {
@@ -467,11 +463,7 @@ static void ACHookUIIconClass(NSString *className) {
     }
 }
 
-#import "LegacyResources.h"
-
 static void ACInstallLazyUIHooks(void) {
-    ACInstallLegacyResources();
-    if (!ACIsUIProcess()) return;
     ACHookUIIconClass(@"HPSBatteryStatusView");
     ACHookUIProductIDClass(@"BluetoothDevice");
     ACHookUIProductIDClass(@"BTSDevice");
@@ -752,7 +744,7 @@ static void ACInstallFeatureContentBorrowing(void) {
             return;
         }
 
-        if (ACIsUIProcess() || ACIsResourceUIProcess()) {
+        if (ACIsUIProcess()) {
             ACInstallLazyUIHooks();
             _dyld_register_func_for_add_image(ACImageAdded);
         }

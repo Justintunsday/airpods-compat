@@ -354,14 +354,12 @@ static id AC_UIModelName(id self, SEL _cmd, id device) {
     NSString *mappedName = nil;
     if ([name isKindOfClass:[NSString class]]) {
         NSString *key = (NSString *)name;
-        BOOL headerController =
-            [NSStringFromClass([self class]) isEqualToString:@"HPSHeadphoneConfigController"];
         if ([key isEqualToString:@"ACCESSORY_MODEL_NAME_54"] ||
             [key isEqualToString:@"ACCESSORY_MODEL_NAME_55"]) {
-            mappedName = headerController ? @"ACCESSORY_MODEL_NAME_20" : @"AirPods 5";
+            mappedName = @"AirPods 5";
         } else if ([key isEqualToString:@"ACCESSORY_MODEL_NAME_48"] ||
                    [key isEqualToString:@"ACCESSORY_MODEL_NAME_50"]) {
-            mappedName = headerController ? @"ACCESSORY_MODEL_NAME_20" : @"AirPods 5 (Wireless Charging)";
+            mappedName = @"AirPods 5 (Wireless Charging)";
         }
     }
     AC_LOG(@"getModelName class=%@ device=%@ original=%@ mapped=%@",

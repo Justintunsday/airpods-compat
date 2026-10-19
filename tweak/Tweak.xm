@@ -85,7 +85,8 @@ static NSString *ACSupportPath(NSString *name) {
 }
 
 static NSString *ACPrefsPath(void) {
-    return ROOT_PATH_NS(@"/var/mobile/Library/Preferences/com.justintunsday.airpodscompat.plist");
+    // User data is outside the jailbreak installation prefix.
+    return @"/var/mobile/Library/Preferences/com.justintunsday.airpodscompat.plist";
 }
 
 static NSString *ACProcessName(void) {

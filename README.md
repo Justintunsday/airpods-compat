@@ -108,6 +108,14 @@ docs/ANALYSIS.md     # 分析报告（型号映射、hook 目标、风险）
 2. `ipsw dyld` 定向查询 + 抽取目标 dylib（不做全量 dump，避免 30 分钟级卡顿）
 3. `tools/extract_airpods_models.py` 反汇编 CoreUARP，输出型号表（tier/基类/备选型号）
 
+## iOS 16/17 旧设置页
+
+iOS 16/17 没有 `HeadphoneManager`/FeatureContent 链，设置页由旧 `HeadphoneConfigs` 按 PID
+选择模板。新增 pref `LegacyUIProfile`（默认 `pro2`）：仅在 Preferences/SpringBoard 内把
+AirPods 5 的 PID（0x2036/0x2030/0x2037/0x2032）映射为 AirPods Pro 2（0x2014），让页面
+与系统已经使用的 Pro 2 功能一致；显示名仍优先显示 `AirPods 5`。可选值：
+`pro2`（默认）/ `airpods4anc` / `airpodspro3` / `off`。
+
 ## 已知差异（iOS 26.6.2 相对 27.0）
 
 - **显示名**：`AirPods 5`、`AirPods 5 (Wireless Charging)`（27.0 位于 CoreBluetooth）

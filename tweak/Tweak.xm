@@ -32,6 +32,8 @@
 #import <objc/runtime.h>
 #import <substrate.h>
 #import <dlfcn.h>
+#import <mach-o/dyld.h>
+#import <dispatch/dispatch.h>
 #import <fcntl.h>
 #import <errno.h>
 #import <unistd.h>
@@ -58,6 +60,16 @@ static const uint32_t kAirPodsPro3ProductID = 0x2027;
 static BOOL gHasB868FeatureContent = NO;
 static BOOL gBorrowEnabled = YES;
 static uint32_t gBorrowProductID = 0x201b;
+static BOOL gLegacyUIProfileEnabled = NO;
+static uint32_t gLegacyUIProductID = 0x2014;
+static NSMutableSet<NSNumber *> *gLoggedUIMappings;
+static NSMutableDictionary<NSString *, NSValue *> *gOriginalUIProductIDIMPs;
+static NSMutableDictionary<NSString *, NSValue *> *gOriginalUIProductNameIMPs;
+static NSMutableDictionary<NSString *, NSValue *> *gOriginalUIModelNameIMPs;
+static NSMutableSet<NSString *> *gHookedUIProductIDClasses;
+static NSMutableSet<NSString *> *gHookedUIProductNameClasses;
+static NSMutableSet<NSString *> *gHookedUIModelNameClasses;
+static void *ACOriginalUIProductIDKey = &ACOriginalUIProductIDKey;
 static NSMutableDictionary<NSString *, NSDictionary *> *gClassTable;
 static NSDictionary<NSNumber *, NSString *> *gDisplayNames;
 
@@ -96,6 +108,23 @@ static void ACLoadConfig(void) {
         gBorrowProductID = kAirPods4AncProductID;
     }
 
+    gLegacyUIProductID = kAirPodsPro2ProductID;
+    gLegacyUIProfileEnabled =
+        NSProcessInfo.processInfo.operatingSystemVersion.majorVersion < 18;
+    NSString *legacyUI = prefs[@"LegacyUIProfile"];
+    if ([legacyUI isEqualToString:@"off"]) {
+        gLegacyUIProfileEnabled = NO;
+    } else if ([legacyUI isEqualToString:@"airpods4anc"]) {
+        gLegacyUIProfileEnabled = YES;
+        gLegacyUIProductID = kAirPods4AncProductID;
+    } else if ([legacyUI isEqualToString:@"airpodspro2"] || [legacyUI isEqualToString:@"pro2"]) {
+        gLegacyUIProfileEnabled = YES;
+        gLegacyUIProductID = kAirPodsPro2ProductID;
+    } else if ([legacyUI isEqualToString:@"airpodspro3"]) {
+        gLegacyUIProfileEnabled = YES;
+        gLegacyUIProductID = kAirPodsPro3ProductID;
+    }
+
     NSMutableDictionary *names = [NSMutableDictionary dictionary];
     [gConfig[@"DisplayNames"] enumerateKeysAndObjectsUsingBlock:^(NSString *key, NSString *name, BOOL *stop) {
         names[@(key.intValue)] = name;
@@ -103,11 +132,212 @@ static void ACLoadConfig(void) {
     gDisplayNames = names;
     gClassTable = [NSMutableDictionary dictionary];
 
-    AC_LOG(@"config: uarp=%lu scope=%@ enabled=%d uarpEnabled=%d borrow=%@ process=%@",
+    AC_LOG(@"config: uarp=%lu scope=%@ enabled=%d uarpEnabled=%d borrow=%@ legacyUI=%@ process=%@",
            (unsigned long)[gConfig[@"UARP"] count], gScopeAll ? @"all" : @"core",
            gEnabled, gUARPEnabled,
            gBorrowEnabled ? [NSString stringWithFormat:@"0x%x", gBorrowProductID] : @"off",
+           gLegacyUIProfileEnabled ? [NSString stringWithFormat:@"0x%x", gLegacyUIProductID] : @"off",
            ACProcessName());
+}
+
+static BOOL ACIsUIProcess(void) {
+    NSString *name = ACProcessName();
+    return [name isEqualToString:@"Preferences"] || [name isEqualToString:@"SpringBoard"];
+}
+
+static uint32_t ACMapUIAccessoryProductID(uint32_t productID) {
+    if (!gEnabled || !gLegacyUIProfileEnabled || !ACIsUIProcess()) {
+        return productID;
+    }
+    for (size_t i = 0; i < sizeof(kAirPods5ProductIDs) / sizeof(kAirPods5ProductIDs[0]); i++) {
+        if (kAirPods5ProductIDs[i] != productID) {
+            continue;
+        }
+        if (![gLoggedUIMappings containsObject:@(productID)]) {
+            [gLoggedUIMappings addObject:@(productID)];
+            AC_LOG(@"legacy UI mapping 0x%x -> 0x%x", productID, gLegacyUIProductID);
+        }
+        return gLegacyUIProductID;
+    }
+    return productID;
+}
+
+static NSValue *ACOriginalIMPForObject(NSDictionary<NSString *, NSValue *> *map, id object) {
+    for (Class cls = object_getClass(object); cls; cls = class_getSuperclass(cls)) {
+        NSValue *value = map[NSStringFromClass(cls)];
+        if (value) {
+            return value;
+        }
+    }
+    return nil;
+}
+
+static NSNumber *ACOriginalProductIDForUIObject(id object) {
+    NSNumber *original = objc_getAssociatedObject(object, ACOriginalUIProductIDKey);
+    if (original) {
+        return original;
+    }
+    NSValue *value = ACOriginalIMPForObject(gOriginalUIProductIDIMPs, object);
+    if (!value) {
+        return nil;
+    }
+    unsigned int productID =
+        ((unsigned int (*)(id, SEL))value.pointerValue)(object, sel_registerName("productID"));
+    if (ACMapUIAccessoryProductID(productID) == productID) {
+        return nil;
+    }
+    original = @(productID);
+    objc_setAssociatedObject(object, ACOriginalUIProductIDKey, original,
+                             OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+    return original;
+}
+
+static unsigned int AC_UIProductID(id self, SEL _cmd) {
+    NSValue *value = ACOriginalIMPForObject(gOriginalUIProductIDIMPs, self);
+    if (!value) {
+        return 0;
+    }
+    unsigned int productID = ((unsigned int (*)(id, SEL))value.pointerValue)(self, _cmd);
+    uint32_t mapped = ACMapUIAccessoryProductID(productID);
+    if (mapped != productID) {
+        objc_setAssociatedObject(self, ACOriginalUIProductIDKey, @(productID),
+                                 OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+    } else {
+        objc_setAssociatedObject(self, ACOriginalUIProductIDKey, nil,
+                                 OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+    }
+    return mapped;
+}
+
+static id AC_UIProductName(id self, SEL _cmd) {
+    NSNumber *original = ACOriginalProductIDForUIObject(self);
+    if (original) {
+        NSString *name = gDisplayNames[original];
+        if (name) {
+            return name;
+        }
+    }
+    NSValue *value = ACOriginalIMPForObject(gOriginalUIProductNameIMPs, self);
+    if (!value) {
+        return nil;
+    }
+    return ((id (*)(id, SEL))value.pointerValue)(self, _cmd);
+}
+
+static void ACHookUIProductIDClass(NSString *className) {
+    if ([gHookedUIProductIDClasses containsObject:className]) {
+        return;
+    }
+    Class cls = objc_getClass(className.UTF8String);
+    if (!cls) {
+        return;
+    }
+    SEL sel = sel_registerName("productID");
+    Method method = class_getInstanceMethod(cls, sel);
+    if (!method) {
+        return;
+    }
+    const char *types = method_getTypeEncoding(method);
+    if (!types || (types[0] != 'I' && types[0] != 'i' &&
+                   types[0] != 'S' && types[0] != 'Q' && types[0] != 'L')) {
+        AC_LOG(@"%@ productID type %s not hooked", className, types ?: "?");
+        return;
+    }
+    IMP original = NULL;
+    MSHookMessageEx(cls, sel, (IMP)AC_UIProductID, &original);
+    if (original) {
+        gOriginalUIProductIDIMPs[className] = [NSValue valueWithPointer:original];
+        [gHookedUIProductIDClasses addObject:className];
+        AC_LOG(@"hooked %@ productID", className);
+    }
+}
+
+static void ACHookUIProductNameClass(NSString *className) {
+    if ([gHookedUIProductNameClasses containsObject:className]) {
+        return;
+    }
+    Class cls = objc_getClass(className.UTF8String);
+    if (!cls) {
+        return;
+    }
+    SEL sel = sel_registerName("productName");
+    Method method = class_getInstanceMethod(cls, sel);
+    if (!method) {
+        return;
+    }
+    const char *types = method_getTypeEncoding(method);
+    if (!types || types[0] != '@') {
+        return;
+    }
+    IMP original = NULL;
+    MSHookMessageEx(cls, sel, (IMP)AC_UIProductName, &original);
+    if (original) {
+        gOriginalUIProductNameIMPs[className] = [NSValue valueWithPointer:original];
+        [gHookedUIProductNameClasses addObject:className];
+        AC_LOG(@"hooked %@ productName", className);
+    }
+}
+
+static id AC_UIModelName(id self, SEL _cmd, id device) {
+    NSNumber *original = ACOriginalProductIDForUIObject(device);
+    if (original) {
+        NSString *name = gDisplayNames[original];
+        if (name) {
+            return name;
+        }
+    }
+    NSValue *value = ACOriginalIMPForObject(gOriginalUIModelNameIMPs, self);
+    if (!value) {
+        return nil;
+    }
+    return ((id (*)(id, SEL, id))value.pointerValue)(self, _cmd, device);
+}
+
+static void ACHookUIModelNameClass(NSString *className) {
+    if ([gHookedUIModelNameClasses containsObject:className]) {
+        return;
+    }
+    Class cls = objc_getClass(className.UTF8String);
+    if (!cls) {
+        return;
+    }
+    SEL sel = sel_registerName("getModelName:");
+    Method method = class_getInstanceMethod(cls, sel);
+    if (!method) {
+        return;
+    }
+    const char *types = method_getTypeEncoding(method);
+    if (!types || types[0] != '@' || types[1] != '@' ||
+        types[2] != ':' || types[3] != '@') {
+        return;
+    }
+    IMP original = NULL;
+    MSHookMessageEx(cls, sel, (IMP)AC_UIModelName, &original);
+    if (original) {
+        gOriginalUIModelNameIMPs[className] = [NSValue valueWithPointer:original];
+        [gHookedUIModelNameClasses addObject:className];
+        AC_LOG(@"hooked %@ getModelName:", className);
+    }
+}
+
+static void ACInstallLazyUIHooks(void) {
+    ACHookUIProductIDClass(@"BluetoothDevice");
+    ACHookUIProductIDClass(@"BTSDevice");
+    ACHookUIProductIDClass(@"CUBluetoothDevice");
+    ACHookUIProductNameClass(@"BluetoothDevice");
+    ACHookUIProductNameClass(@"BTSDevice");
+    ACHookUIProductNameClass(@"CUBluetoothDevice");
+    ACHookUIModelNameClass(@"BTSDeviceConfigController");
+    ACHookUIModelNameClass(@"BluetoothDevice");
+    ACHookUIModelNameClass(@"BTSDevice");
+}
+
+static void ACImageAdded(const struct mach_header *mh, intptr_t slide) {
+    (void)mh;
+    (void)slide;
+    dispatch_async(dispatch_get_main_queue(), ^{
+        ACInstallLazyUIHooks();
+    });
 }
 
 #pragma mark - CoreUARP registration
@@ -304,10 +534,32 @@ static void ACInstallFeatureContentBorrowing(void) {
 
 %hook CBDevice
 
+- (unsigned int)productID {
+    unsigned int productID = %orig;
+    uint32_t mapped = ACMapUIAccessoryProductID(productID);
+    if (mapped != productID) {
+        objc_setAssociatedObject(self, ACOriginalUIProductIDKey, @(productID),
+                                 OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+    } else {
+        objc_setAssociatedObject(self, ACOriginalUIProductIDKey, nil,
+                                 OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+    }
+    return mapped;
+}
+
 - (NSString *)productName {
-    NSString *original = %orig;
-    NSString *name = gDisplayNames[@([self productID])];
-    return name ?: original;
+    [self productID];
+    NSNumber *original = objc_getAssociatedObject(self, ACOriginalUIProductIDKey);
+    NSString *name = original ? gDisplayNames[original] : gDisplayNames[@([self productID])];
+    return name ?: %orig;
+}
+
+%end
+
+%hook CBProductInfo
+
++ (id)productInfoWithProductID:(unsigned int)productID {
+    return %orig(ACMapUIAccessoryProductID(productID));
 }
 
 %end
@@ -323,10 +575,22 @@ static void ACInstallFeatureContentBorrowing(void) {
 
 %ctor {
     @autoreleasepool {
+        gLoggedUIMappings = [NSMutableSet set];
+        gOriginalUIProductIDIMPs = [NSMutableDictionary dictionary];
+        gOriginalUIProductNameIMPs = [NSMutableDictionary dictionary];
+        gOriginalUIModelNameIMPs = [NSMutableDictionary dictionary];
+        gHookedUIProductIDClasses = [NSMutableSet set];
+        gHookedUIProductNameClasses = [NSMutableSet set];
+        gHookedUIModelNameClasses = [NSMutableSet set];
         ACLoadConfig();
         if (!gEnabled) {
             AC_LOG(@"disabled via prefs");
             return;
+        }
+
+        if (ACIsUIProcess() && gLegacyUIProfileEnabled) {
+            ACInstallLazyUIHooks();
+            _dyld_register_func_for_add_image(ACImageAdded);
         }
 
         ACInstallFeatureContentBorrowing();

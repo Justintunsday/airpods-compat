@@ -66,6 +66,8 @@ static BOOL gLegacyIconProfileEnabled = NO;
 static uint32_t gLegacyIconProductID = 0x2013;
 static NSMutableDictionary<NSString *, NSValue *> *gOriginalUIIconIMPs;
 static NSMutableSet<NSString *> *gHookedUIIconClasses;
+static NSMutableDictionary<NSString *, NSValue *> *gOriginalMediaIsAirPodsIMPs;
+static NSMutableSet<NSString *> *gHookedMediaIsAirPodsClasses;
 static NSMutableSet<NSNumber *> *gLoggedUIMappings;
 static NSMutableDictionary<NSString *, NSValue *> *gOriginalUIProductIDIMPs;
 static NSMutableDictionary<NSString *, NSValue *> *gOriginalUIProductNameIMPs;
@@ -464,8 +466,59 @@ static void ACHookUIIconClass(NSString *className) {
     }
 }
 
+static BOOL AC_MediaIsAirPods(id self, SEL _cmd) {
+    NSValue *value = ACOriginalIMPForObject(gOriginalMediaIsAirPodsIMPs, self);
+    BOOL original = value ? ((BOOL (*)(id, SEL))value.pointerValue)(self, _cmd) : NO;
+    NSString *name = nil;
+    NSString *modelID = nil;
+    @try {
+        name = [self valueForKey:@"name"];
+        modelID = [self valueForKey:@"modelID"];
+    } @catch (__unused NSException *exception) {
+    }
+    BOOL matches = [name isKindOfClass:[NSString class]] &&
+                   ([name containsString:@"AirPods"] || [name containsString:@"AirPods 5"]);
+    if (!original && matches) {
+        AC_LOG(@"MRAVOutputDevice isAirPods -> YES name=%@ modelID=%@", name, modelID);
+        return YES;
+    }
+    return original;
+}
+
+static void ACHookMediaIsAirPodsClass(NSString *className) {
+    if ([gHookedMediaIsAirPodsClasses containsObject:className]) {
+        return;
+    }
+    Class cls = objc_getClass(className.UTF8String);
+    if (!cls) {
+        return;
+    }
+    SEL sel = sel_registerName("isAirPods");
+    Method method = class_getInstanceMethod(cls, sel);
+    if (!method) {
+        return;
+    }
+    const char *types = method_getTypeEncoding(method);
+    NSMethodSignature *signature = types ? [NSMethodSignature signatureWithObjCTypes:types] : nil;
+    if (!signature || signature.numberOfArguments != 2 ||
+        (signature.methodReturnType[0] != 'B' && signature.methodReturnType[0] != 'c')) {
+        return;
+    }
+    IMP original = NULL;
+    MSHookMessageEx(cls, sel, (IMP)AC_MediaIsAirPods, &original);
+    if (original) {
+        gOriginalMediaIsAirPodsIMPs[className] = [NSValue valueWithPointer:(void *)original];
+        [gHookedMediaIsAirPodsClasses addObject:className];
+        AC_LOG(@"hooked %@ isAirPods", className);
+    }
+}
+
 static void ACInstallLazyUIHooks(void) {
     ACHookUIIconClass(@"HPSBatteryStatusView");
+    ACHookMediaIsAirPodsClass(@"MRAVOutputDevice");
+    ACHookMediaIsAirPodsClass(@"MRAVConcreteOutputDevice");
+    ACHookMediaIsAirPodsClass(@"MRAVDistantOutputDevice");
+    ACHookMediaIsAirPodsClass(@"MPAVOutputDevice");
     ACHookUIProductIDClass(@"BluetoothDevice");
     ACHookUIProductIDClass(@"BTSDevice");
     ACHookUIProductIDClass(@"CUBluetoothDevice");
@@ -729,6 +782,8 @@ static void ACInstallFeatureContentBorrowing(void) {
         gHookedUIModelNameClasses = [NSMutableSet set];
         gOriginalUIIconIMPs = [NSMutableDictionary dictionary];
         gHookedUIIconClasses = [NSMutableSet set];
+        gOriginalMediaIsAirPodsIMPs = [NSMutableDictionary dictionary];
+        gHookedMediaIsAirPodsClasses = [NSMutableSet set];
         ACLoadConfig();
         if (!gEnabled) {
             AC_LOG(@"disabled via prefs");

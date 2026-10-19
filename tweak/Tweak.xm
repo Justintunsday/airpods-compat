@@ -62,6 +62,10 @@ static BOOL gBorrowEnabled = YES;
 static uint32_t gBorrowProductID = 0x201b;
 static BOOL gLegacyUIProfileEnabled = NO;
 static uint32_t gLegacyUIProductID = 0x2014;
+static BOOL gLegacyIconProfileEnabled = NO;
+static uint32_t gLegacyIconProductID = 0x2013;
+static NSMutableDictionary<NSString *, NSValue *> *gOriginalUIIconIMPs;
+static NSMutableSet<NSString *> *gHookedUIIconClasses;
 static NSMutableSet<NSNumber *> *gLoggedUIMappings;
 static NSMutableDictionary<NSString *, NSValue *> *gOriginalUIProductIDIMPs;
 static NSMutableDictionary<NSString *, NSValue *> *gOriginalUIProductNameIMPs;
@@ -126,6 +130,22 @@ static void ACLoadConfig(void) {
         gLegacyUIProductID = kAirPodsPro3ProductID;
     }
 
+    gLegacyIconProductID = 0x2013;
+    gLegacyIconProfileEnabled =
+        NSProcessInfo.processInfo.operatingSystemVersion.majorVersion < 18;
+    NSString *legacyIcon = prefs[@"LegacyIconProfile"];
+    if ([legacyIcon isEqualToString:@"off"]) {
+        gLegacyIconProfileEnabled = NO;
+    } else if ([legacyIcon isEqualToString:@"pro2"] ||
+               [legacyIcon isEqualToString:@"airpodspro2"]) {
+        gLegacyIconProfileEnabled = YES;
+        gLegacyIconProductID = kAirPodsPro2ProductID;
+    } else if ([legacyIcon isEqualToString:@"airpods3"] ||
+               [legacyIcon isEqualToString:@"airpods4anc"]) {
+        gLegacyIconProfileEnabled = YES;
+        gLegacyIconProductID = 0x2013;
+    }
+
     NSMutableDictionary *names = [NSMutableDictionary dictionary];
     [gConfig[@"DisplayNames"] enumerateKeysAndObjectsUsingBlock:^(NSString *key, NSString *name, BOOL *stop) {
         names[@(key.intValue)] = name;
@@ -133,11 +153,12 @@ static void ACLoadConfig(void) {
     gDisplayNames = names;
     gClassTable = [NSMutableDictionary dictionary];
 
-    AC_LOG(@"config: uarp=%lu scope=%@ enabled=%d uarpEnabled=%d borrow=%@ legacyUI=%@ process=%@",
+    AC_LOG(@"config: uarp=%lu scope=%@ enabled=%d uarpEnabled=%d borrow=%@ legacyUI=%@ legacyIcon=%@ process=%@",
            (unsigned long)[gConfig[@"UARP"] count], gScopeAll ? @"all" : @"core",
            gEnabled, gUARPEnabled,
            gBorrowEnabled ? [NSString stringWithFormat:@"0x%x", gBorrowProductID] : @"off",
            gLegacyUIProfileEnabled ? [NSString stringWithFormat:@"0x%x", gLegacyUIProductID] : @"off",
+           gLegacyIconProfileEnabled ? [NSString stringWithFormat:@"0x%x", gLegacyIconProductID] : @"off",
            ACProcessName());
 }
 
@@ -159,6 +180,22 @@ static uint32_t ACMapUIAccessoryProductID(uint32_t productID) {
             AC_LOG(@"legacy UI mapping 0x%x -> 0x%x", productID, gLegacyUIProductID);
         }
         return gLegacyUIProductID;
+    }
+    return productID;
+}
+
+static uint32_t ACMapUIIconProductID(uint32_t productID) {
+    static const uint32_t iconProductIDs[] = {
+        0x2036, 0x2030, 0x2037, 0x2032, 0x2035, 0x13a5, 0x13a4
+    };
+    if (!gEnabled || !gLegacyIconProfileEnabled || !ACIsUIProcess()) {
+        return productID;
+    }
+    for (size_t i = 0; i < sizeof(iconProductIDs) / sizeof(iconProductIDs[0]); i++) {
+        if (iconProductIDs[i] == productID) {
+            AC_LOG(@"legacy icon mapping 0x%x -> 0x%x", productID, gLegacyIconProductID);
+            return gLegacyIconProductID;
+        }
     }
     return productID;
 }
@@ -360,7 +397,67 @@ static void ACHookUIModelNameClass(NSString *className) {
     }
 }
 
+static NSValue *ACOriginalUIIconIMPForObject(id object, SEL sel) {
+    for (Class cls = object_getClass(object); cls; cls = class_getSuperclass(cls)) {
+        NSString *key = [NSString stringWithFormat:@"%@-%@", NSStringFromClass(cls), NSStringFromSelector(sel)];
+        NSValue *value = gOriginalUIIconIMPs[key];
+        if (value) {
+            return value;
+        }
+    }
+    return nil;
+}
+
+static id AC_UIIconProductID(id self, SEL _cmd, unsigned int productID) {
+    NSValue *value = ACOriginalUIIconIMPForObject(self, _cmd);
+    if (!value) {
+        return nil;
+    }
+    unsigned int mapped = ACMapUIIconProductID(productID);
+    id result = ((id (*)(id, SEL, unsigned int))value.pointerValue)(self, _cmd, mapped);
+    AC_LOG(@"icon %@ pid=0x%x mapped=0x%x result=%@",
+           NSStringFromSelector(_cmd), productID, mapped, result);
+    return result;
+}
+
+static void ACHookUIIconClass(NSString *className) {
+    if ([gHookedUIIconClasses containsObject:className]) {
+        return;
+    }
+    Class cls = objc_getClass(className.UTF8String);
+    if (!cls) {
+        return;
+    }
+    BOOL hooked = NO;
+    for (NSString *selName in @[@"getDeviceCaseIcon:", @"getAssetsDictionary:"]) {
+        SEL sel = sel_registerName(selName.UTF8String);
+        Method method = class_getInstanceMethod(cls, sel);
+        if (!method) {
+            continue;
+        }
+        const char *types = method_getTypeEncoding(method);
+        NSMethodSignature *signature = types ? [NSMethodSignature signatureWithObjCTypes:types] : nil;
+        if (!signature || signature.numberOfArguments != 3 ||
+            signature.methodReturnType[0] != '@' ||
+            [signature getArgumentTypeAtIndex:2][0] != 'I') {
+            continue;
+        }
+        IMP original = NULL;
+        MSHookMessageEx(cls, sel, (IMP)AC_UIIconProductID, &original);
+        if (original) {
+            NSString *key = [NSString stringWithFormat:@"%@-%@", className, selName];
+            gOriginalUIIconIMPs[key] = [NSValue valueWithPointer:(void *)original];
+            hooked = YES;
+            AC_LOG(@"hooked %@ %@", className, selName);
+        }
+    }
+    if (hooked) {
+        [gHookedUIIconClasses addObject:className];
+    }
+}
+
 static void ACInstallLazyUIHooks(void) {
+    ACHookUIIconClass(@"HPSBatteryStatusView");
     ACHookUIProductIDClass(@"BluetoothDevice");
     ACHookUIProductIDClass(@"BTSDevice");
     ACHookUIProductIDClass(@"CUBluetoothDevice");
@@ -630,13 +727,15 @@ static void ACInstallFeatureContentBorrowing(void) {
         gHookedUIProductNameClasses = [NSMutableSet set];
         gHookedUIModelNameClasses = [NSMutableSet set];
         gDumpedMethodClasses = [NSMutableSet set];
+        gOriginalUIIconIMPs = [NSMutableDictionary dictionary];
+        gHookedUIIconClasses = [NSMutableSet set];
         ACLoadConfig();
         if (!gEnabled) {
             AC_LOG(@"disabled via prefs");
             return;
         }
 
-        if (ACIsUIProcess() && gLegacyUIProfileEnabled) {
+        if (ACIsUIProcess() && (gLegacyUIProfileEnabled || gLegacyIconProfileEnabled)) {
             ACInstallLazyUIHooks();
             _dyld_register_func_for_add_image(ACImageAdded);
         }

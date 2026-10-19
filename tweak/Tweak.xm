@@ -674,6 +674,25 @@ static void ACInstallFeatureContentBorrowing(void) {
 @interface CBAccessoryLogging : NSObject
 @end
 
+@interface UIImage : NSObject
+@end
+
+%hook UIImage
+
++ (id)imageNamed:(NSString *)name {
+    if (ACIsUIProcess()) {
+        NSString *lower = name.lowercaseString;
+        if ([lower containsString:@"airpod"] || [lower containsString:@"headphone"] ||
+            [lower containsString:@"battery"] || [lower containsString:@"case"] ||
+            [lower containsString:@"bud"] || [lower containsString:@"audio"]) {
+            AC_LOG(@"UIImage imageNamed=%@", name);
+        }
+    }
+    return %orig;
+}
+
+%end
+
 %hook CBDevice
 
 - (unsigned int)productID {

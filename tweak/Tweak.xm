@@ -398,6 +398,14 @@ static id AC_UIIconProductID(id self, SEL _cmd, unsigned int productID) {
     return result;
 }
 
+static id (*orig_BatteryProductIDString)(id, SEL);
+
+static id AC_BatteryProductIDString(id self, SEL _cmd) {
+    id result = orig_BatteryProductIDString ? orig_BatteryProductIDString(self, _cmd) : nil;
+    AC_LOG(@"HPSBatteryStatusView getProductIDString=%@", result);
+    return result;
+}
+
 static void ACHookUIIconClass(NSString *className) {
     if ([gHookedUIIconClasses containsObject:className]) {
         return;
@@ -427,6 +435,19 @@ static void ACHookUIIconClass(NSString *className) {
             gOriginalUIIconIMPs[key] = [NSValue valueWithPointer:(void *)original];
             hooked = YES;
             AC_LOG(@"hooked %@ %@", className, selName);
+        }
+    }
+    if ([className isEqualToString:@"HPSBatteryStatusView"]) {
+        SEL sel = sel_registerName("getProductIDString");
+        Method method = class_getInstanceMethod(cls, sel);
+        if (method) {
+            IMP original = NULL;
+            MSHookMessageEx(cls, sel, (IMP)AC_BatteryProductIDString, &original);
+            if (original) {
+                orig_BatteryProductIDString = (void *)original;
+                hooked = YES;
+                AC_LOG(@"hooked %@ getProductIDString", className);
+            }
         }
     }
     if (hooked) {

@@ -234,7 +234,7 @@ static int AC_BTDeviceGetDeviceId(void *device, uint32_t *vendorIDSource,
     int result = orig_BTDeviceGetDeviceId
         ? orig_BTDeviceGetDeviceId(device, vendorIDSource, vendorID, productID, version)
         : -1;
-    if (productID && *productID) {
+    if (productID && *productID && ACIsBluetoothDaemon()) {
         uint32_t original = *productID;
         uint32_t mapped = ACMapDaemonProductID(original);
         if (mapped != original) {
@@ -1011,9 +1011,8 @@ static NSDictionary *ACMapCBDeviceDictionary(NSDictionary *dictionary) {
             return;
         }
 
-        if (ACIsBluetoothDaemon()) {
-            ACInstallBluetoothDaemonHook();
-        }
+        AC_LOG(@"daemonCheck=%@", ACIsBluetoothDaemon() ? @"yes" : @"no");
+        ACInstallBluetoothDaemonHook();
 
         if (ACIsUIProcess() && (gLegacyUIProfileEnabled || gLegacyIconProfileEnabled)) {
             ACInstallLazyUIHooks();

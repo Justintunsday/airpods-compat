@@ -402,6 +402,11 @@ static id (*orig_BatteryProductIDString)(id, SEL);
 
 static id AC_BatteryProductIDString(id self, SEL _cmd) {
     id result = orig_BatteryProductIDString ? orig_BatteryProductIDString(self, _cmd) : nil;
+    if ([result isKindOfClass:[NSString class]] && [result isEqualToString:@"UNKNOWN"]) {
+        NSString *mapped = (gLegacyIconProductID == kAirPodsPro2ProductID) ? @"B698" : @"B688";
+        AC_LOG(@"HPSBatteryStatusView getProductIDString=%@ -> %@", result, mapped);
+        return mapped;
+    }
     AC_LOG(@"HPSBatteryStatusView getProductIDString=%@", result);
     return result;
 }

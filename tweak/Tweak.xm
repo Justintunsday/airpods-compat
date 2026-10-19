@@ -34,6 +34,7 @@
 #import <dlfcn.h>
 #import <mach-o/dyld.h>
 #import <dispatch/dispatch.h>
+#import <CoreGraphics/CoreGraphics.h>
 #import <fcntl.h>
 #import <errno.h>
 #import <unistd.h>
@@ -458,8 +459,81 @@ static void ACHookUIIconClass(NSString *className) {
     }
 }
 
+static id ACSafeValue(id object, NSString *key) {
+    @try {
+        return [object valueForKey:key];
+    } @catch (__unused NSException *exception) {
+        return nil;
+    }
+}
+
+static void ACLogViewTree(id view, int depth) {
+    if (depth > 3) {
+        return;
+    }
+    NSArray *subviews = ACSafeValue(view, @"subviews");
+    for (id subview in subviews) {
+        AC_LOG(@"view[%d] %@ frame=%@ hidden=%@ text=%@ image=%@",
+               depth, NSStringFromClass([subview class]),
+               ACSafeValue(subview, @"frame"), ACSafeValue(subview, @"hidden"),
+               ACSafeValue(subview, @"text"), ACSafeValue(subview, @"image"));
+        ACLogViewTree(subview, depth + 1);
+    }
+}
+
+static void (*orig_BatterySetupViews)(id, SEL);
+static void (*orig_BatteryGetBatteryStatus)(id, SEL);
+static id (*orig_BatteryInit)(id, SEL, CGRect, id, BOOL);
+
+static void AC_BatterySetupViews(id self, SEL _cmd) {
+    if (orig_BatterySetupViews) {
+        orig_BatterySetupViews(self, _cmd);
+    }
+    AC_LOG(@"HPSBatteryStatusView setupViews");
+    ACLogViewTree(self, 0);
+}
+
+static void AC_BatteryGetBatteryStatus(id self, SEL _cmd) {
+    if (orig_BatteryGetBatteryStatus) {
+        orig_BatteryGetBatteryStatus(self, _cmd);
+    }
+    AC_LOG(@"HPSBatteryStatusView getBatteryStatus");
+    ACLogViewTree(self, 0);
+}
+
+static id AC_BatteryInit(id self, SEL _cmd, CGRect frame, id device, BOOL darkMode) {
+    AC_LOG(@"HPSBatteryStatusView init device=%@ class=%@ name=%@ productName=%@ productID=%@",
+           device, NSStringFromClass([device class]),
+           ACSafeValue(device, @"name"), ACSafeValue(device, @"productName"),
+           ACSafeValue(device, @"productID"));
+    return orig_BatteryInit ? orig_BatteryInit(self, _cmd, frame, device, darkMode) : nil;
+}
+
+static void ACHookBatteryStatusView(void) {
+    Class cls = objc_getClass("HPSBatteryStatusView");
+    if (!cls) {
+        return;
+    }
+    Method setup = class_getInstanceMethod(cls, sel_registerName("setupViews"));
+    if (setup) {
+        MSHookMessageEx(cls, sel_registerName("setupViews"),
+                        (IMP)AC_BatterySetupViews, (IMP *)&orig_BatterySetupViews);
+    }
+    Method battery = class_getInstanceMethod(cls, sel_registerName("getBatteryStatus"));
+    if (battery) {
+        MSHookMessageEx(cls, sel_registerName("getBatteryStatus"),
+                        (IMP)AC_BatteryGetBatteryStatus, (IMP *)&orig_BatteryGetBatteryStatus);
+    }
+    Method init = class_getInstanceMethod(cls, sel_registerName("initWithFrame:device:darkMode:"));
+    if (init) {
+        MSHookMessageEx(cls, sel_registerName("initWithFrame:device:darkMode:"),
+                        (IMP)AC_BatteryInit, (IMP *)&orig_BatteryInit);
+    }
+}
+
 static void ACInstallLazyUIHooks(void) {
     ACHookUIIconClass(@"HPSBatteryStatusView");
+    ACHookBatteryStatusView();
     ACHookUIProductIDClass(@"BluetoothDevice");
     ACHookUIProductIDClass(@"BTSDevice");
     ACHookUIProductIDClass(@"CUBluetoothDevice");

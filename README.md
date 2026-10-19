@@ -114,7 +114,8 @@ iOS 16/17 没有 `HeadphoneManager`/FeatureContent 链，设置页由旧 `Headph
 `ACCESSORY_MODEL_NAME_<PID 低 6 位>` 选择模板。tweak 把 AirPods 5 的 54/55（以及无线充电的
 48/50）映射为 `AirPods 5`，并用 pref `LegacyIconProfile`（默认 `airpods3`）把图标/布局资源
 映射到 AirPods 3。可选 `airpods3`（默认）/ `pro2` / `off`。iOS 16 没有 AirPods 5 的头部大图
-资源，设置页顶部图片仍为空白；ANC/通透等功能按设备能力正常工作。
+资源，tweak 将 `getProductIDString=UNKNOWN` 映射为 AirPods 3 的 `B688` 资源，因此顶部显示
+AirPods 3 图片；ANC/通透等功能按设备能力正常工作。
 
 ## 已知差异（iOS 26.6.2 相对 27.0）
 

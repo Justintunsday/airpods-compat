@@ -58,9 +58,9 @@ static id ACBatteryGlyphName(id self, SEL cmd, BOOL *isImage) {
         cls, @selector(batteryDeviceWithIdentifier:vendor:productIdentifier:parts:matchIdentifier:),
         @"AirPodsCompat-resource", vendor, (NSInteger)mapped, parts, @"AirPodsCompat-resource");
     if (!resource) return original;
-    NSInteger category = ((NSInteger (*)(id, SEL))objc_msgSend)(self, @selector(accessoryCategory));
+    NSUInteger category = ((NSUInteger (*)(id, SEL))objc_msgSend)(self, @selector(accessoryCategory));
     ((void (*)(id, SEL, NSInteger))objc_msgSend)(resource, @selector(setTransportType:), transport);
-    ((void (*)(id, SEL, NSInteger))objc_msgSend)(resource, @selector(setAccessoryCategory:), category);
+    ((void (*)(id, SEL, NSUInteger))objc_msgSend)(resource, @selector(setAccessoryCategory:), category);
     BOOL borrowedIsImage = NO;
     id borrowed = orig_ACBatteryGlyphName(resource, cmd, &borrowedIsImage);
     if (![borrowed isKindOfClass:NSString.class] || ![borrowed length] ||
@@ -88,12 +88,13 @@ static void ACInstallLegacyResources(void) {
         !ACSignatureMatches(battery,
           @selector(batteryDeviceWithIdentifier:vendor:productIdentifier:parts:matchIdentifier:),
           "@", @[@"@", @"q", @"q", @"Q", @"@"], YES)) return;
-    for (NSString *getter in @[@"productIdentifier", @"vendor", @"transportType", @"accessoryCategory"]) {
+    for (NSString *getter in @[@"productIdentifier", @"vendor", @"transportType"]) {
         if (!ACSignatureMatches(battery, NSSelectorFromString(getter), "q", @[], NO)) return;
     }
     if (!ACSignatureMatches(battery, @selector(parts), "Q", @[], NO) ||
+        !ACSignatureMatches(battery, @selector(accessoryCategory), "Q", @[], NO) ||
         !ACSignatureMatches(battery, @selector(setTransportType:), "v", @[@"q"], NO) ||
-        !ACSignatureMatches(battery, @selector(setAccessoryCategory:), "v", @[@"q"], NO)) return;
+        !ACSignatureMatches(battery, @selector(setAccessoryCategory:), "v", @[@"Q"], NO)) return;
     MSHookMessageEx(battery, @selector(batteryWidgetGlyphName:), (IMP)ACBatteryGlyphName,
                     (IMP *)&orig_ACBatteryGlyphName);
 }

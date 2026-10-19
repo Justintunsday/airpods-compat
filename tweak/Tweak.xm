@@ -304,6 +304,8 @@ static id AC_UIModelName(id self, SEL _cmd, id device) {
     if (original) {
         NSString *name = gDisplayNames[original];
         if (name) {
+            AC_LOG(@"getModelName mapped class=%@ device=%@ name=%@",
+                   NSStringFromClass([self class]), NSStringFromClass([device class]), name);
             return name;
         }
     }
@@ -311,7 +313,10 @@ static id AC_UIModelName(id self, SEL _cmd, id device) {
     if (!value) {
         return nil;
     }
-    return ((id (*)(id, SEL, id))value.pointerValue)(self, _cmd, device);
+    id name = ((id (*)(id, SEL, id))value.pointerValue)(self, _cmd, device);
+    AC_LOG(@"getModelName class=%@ device=%@ original=%@",
+           NSStringFromClass([self class]), NSStringFromClass([device class]), name);
+    return name;
 }
 
 static void ACHookUIModelNameClass(NSString *className) {
@@ -329,8 +334,10 @@ static void ACHookUIModelNameClass(NSString *className) {
     }
     ACDumpMethods(cls);
     const char *types = method_getTypeEncoding(method);
-    if (!types || types[0] != '@' || types[1] != '@' ||
-        types[2] != ':' || types[3] != '@') {
+    NSMethodSignature *signature = types ? [NSMethodSignature signatureWithObjCTypes:types] : nil;
+    if (!signature || signature.numberOfArguments != 3 ||
+        signature.methodReturnType[0] != '@' ||
+        [signature getArgumentTypeAtIndex:2][0] != '@') {
         return;
     }
     IMP original = NULL;

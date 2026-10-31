@@ -14,7 +14,16 @@ static bool (*originalANCStrength)(id, SEL);
 
 static id ACControllerDevice(id controller) {
     if (!ACMethodMatches(object_getClass(controller), @selector(device), "@", @[], NO)) return nil;
-    return ((id (*)(id, SEL))objc_msgSend)(controller, @selector(device));
+    id device = ((id (*)(id, SEL))objc_msgSend)(controller, @selector(device));
+    Class nativeClass = NSClassFromString(@"BluetoothDevice");
+    if ([device isKindOfClass:nativeClass]) return device;
+    // iOS 18's controller uses BluetoothDeviceProtocol, whose classicDevice
+    // object getter can expose the underlying native BluetoothDevice.
+    if (device && ACMethodMatches(object_getClass(device), @selector(classicDevice), "@", @[], NO)) {
+        id native = ((id (*)(id, SEL))objc_msgSend)(device, @selector(classicDevice));
+        if ([native isKindOfClass:nativeClass]) return native;
+    }
+    return nil;
 }
 static unsigned ACScopedProductID(id device, SEL selector) {
     unsigned pid = originalPID(device, selector);
@@ -51,8 +60,10 @@ void ACInstallHeadphoneConfigHooks(void) {
         ACNativeAirPods5FeatureContent() || !ACNativeProductRecord(0x201b)) return;
     Class device = NSClassFromString(@"BluetoothDevice");
     Class controller = NSClassFromString(@"BTSDeviceConfigController");
-    if (!originalPID && ACMethodMatches(device, @selector(productID), "I", @[], NO))
-        MSHookMessageEx(device, @selector(productID), (IMP)ACScopedProductID, (IMP *)&originalPID);
+    // BluetoothDeviceProtocol and BluetoothManager spell this productId.
+    // CBDevice's separate productID selector is not this lookup boundary.
+    if (!originalPID && ACMethodMatches(device, @selector(productId), "I", @[], NO))
+        MSHookMessageEx(device, @selector(productId), (IMP)ACScopedProductID, (IMP *)&originalPID);
     if (!originalPID || !ACMethodMatches(controller, @selector(device), "@", @[], NO)) return;
     struct { const char *name; const char *result; IMP replacement; IMP *original; } hooks[] = {
         {"adaptiveTransparencySpecifier", "@", (IMP)ACTransparency, (IMP *)&originalTransparency},

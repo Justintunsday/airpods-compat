@@ -37,6 +37,7 @@ class RepositoryTests(unittest.TestCase):
             self.assertNotIn(forbidden, hooks)
         self.assertIn('@finally', text)
         self.assertIn('!= scopedDevice', text)
+        self.assertIn('MSHookMessageEx(device, @selector(productId)', text)
 
     def test_registration_and_telemetry_are_not_spoofed(self):
         resource = (ROOT / 'tweak/SystemIntegration/ResourceResolver.mm').read_text()

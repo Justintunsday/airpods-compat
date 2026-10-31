@@ -40,7 +40,7 @@ struct CompatibilitySnapshot {
             FeatureAssessment(id: "设置与功能选择", status: native ? .native : .unverified,
                 detail: native ? "此 App 可见 B868 原生功能类型。" : "目标为 \(requestedProfile)。系统进程中的安装与设备行为需分别验证。"),
             FeatureAssessment(id: "降噪与通透", status: .unverified,
-                detail: "保留设备报告与系统限制；不会强制开启硬件功能位。iOS 16 有历史设备验收，当前构建需回归。"),
+                detail: "使用系统原生命令并读取实际模式；不会强制开启硬件功能位。按钮、命令回读与实际降噪效果需分别验证。"),
             FeatureAssessment(id: "路由与电池图标", status: .presentationOnly,
                 detail: "在受支持的原生资源工厂内借用图像；不修改音频路由或电量。当前 hook 状态需查看系统记录。"),
             FeatureAssessment(id: "独立充电盒电量", status: .unsupported,

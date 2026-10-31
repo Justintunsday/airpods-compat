@@ -1,0 +1,6 @@
+{
+    Filter = {
+        Bundles = ("com.apple.springboard", "com.apple.Music", "com.apple.podcasts", "com.apple.PosterBoard");
+        Executables = ("MusicUIService");
+    };
+}

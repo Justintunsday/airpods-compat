@@ -11,12 +11,17 @@ INSTALL_TARGET_PROCESSES := SpringBoard bluetoothd
 include $(THEOS)/makefiles/common.mk
 
 TWEAK_NAME := AirPodsCompat AirPodsCompatResources
-AirPodsCompat_FILES := Tweak.xm
-AirPodsCompat_CFLAGS := -fobjc-arc
+AC_COMMON_FILES := Core/ConfigurationManager.mm Platform/RuntimeSymbolResolver.mm
+AirPodsCompat_FILES := Tweak.xm $(AC_COMMON_FILES) Core/CrashGuard.mm \
+    Models/AirPodsModelRegistry.mm Bluetooth/AccessoryRegistration.mm \
+    Bluetooth/DeviceIdentity.mm Hooks/LegacySettingsHooks.mm \
+    Hooks/HeadphoneFeatureHooks.mm Hooks/HeadphoneConfigHooks.mm
+AirPodsCompat_CFLAGS := -fobjc-arc -fvisibility=hidden
+AirPodsCompat_CCFLAGS := -std=c++14
 AirPodsCompat_FRAMEWORKS := Foundation
-AirPodsCompat_LIBRARIES := root
-AirPodsCompatResources_FILES := LegacyResourceTweak.xm
-AirPodsCompatResources_CFLAGS := -fobjc-arc
+AirPodsCompatResources_FILES := LegacyResourceTweak.xm $(AC_COMMON_FILES) SystemIntegration/ResourceResolver.mm
+AirPodsCompatResources_CFLAGS := -fobjc-arc -fvisibility=hidden
+AirPodsCompatResources_CCFLAGS := -std=c++14
 AirPodsCompatResources_FRAMEWORKS := Foundation
 
 include $(THEOS_MAKE_PATH)/tweak.mk

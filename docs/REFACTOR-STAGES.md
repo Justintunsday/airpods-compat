@@ -19,3 +19,11 @@ and the known rootless package SHA-256 in IOS16-RESOURCE-COMPAT.md.
 
 Each stage is committed after its available automated checks. iOS compilation
 and simulator tests run on macOS GitHub Actions; this Windows host has no Xcode.
+
+Stage 1: both C executables passed locally using Zig/Clang with warnings as errors.
+Stage 2: both C suites, registry agreement and five repository integration
+contracts passed. The iOS 18 adapter intentionally scopes five read-only queries;
+it does not wrap loadAccessorySettings or enable capability booleans. Its full
+ANC/settings effect is unverified. Resource filters now explicitly include only
+the previously accepted Apple clients, rather than every MediaPlayer consumer.
+Third-party coverage is therefore a documented opt-in limitation.

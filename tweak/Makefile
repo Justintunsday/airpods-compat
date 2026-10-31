@@ -10,6 +10,10 @@ INSTALL_TARGET_PROCESSES := SpringBoard bluetoothd
 
 include $(THEOS)/makefiles/common.mk
 
+# Current Apple ld ignores this obsolete Theos default. Remove the option;
+# duplicate definitions should remain errors instead of hiding linker warnings.
+_THEOS_TARGET_LDFLAGS := $(filter-out -multiply_defined suppress,$(_THEOS_TARGET_LDFLAGS))
+
 TWEAK_NAME := AirPodsCompat AirPodsCompatResources
 AC_COMMON_FILES := Core/ConfigurationManager.mm Core/DiagnosticsManager.mm Platform/RuntimeSymbolResolver.mm
 AirPodsCompat_FILES := Tweak.xm $(AC_COMMON_FILES) Core/CrashGuard.mm \

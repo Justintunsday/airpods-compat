@@ -4,7 +4,11 @@ import SwiftUI
 struct AirPodsCompatApp: App {
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            if ProcessInfo.processInfo.arguments.contains("--diagnostics") {
+                NavigationView { DiagnosticsView() }
+            } else {
+                ContentView()
+            }
         }
     }
 }

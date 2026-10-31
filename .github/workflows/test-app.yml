@@ -2,10 +2,13 @@ name: Test App
 
 on:
   workflow_dispatch:
+  pull_request:
+    paths: ["app/**", "models/**", ".github/workflows/**"]
   push:
-    branches: [main]
+    branches: [main, codex/airpodscompat-architecture-refactor]
     paths:
       - "app/**"
+      - "models/**"
       - ".github/workflows/test-app.yml"
 
 jobs:
@@ -16,7 +19,7 @@ jobs:
       contents: read
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Install XcodeGen
         run: brew install xcodegen
@@ -37,10 +40,34 @@ jobs:
       - name: Run unit tests (registers all models in the simulator process)
         run: |
           set -o pipefail
+          mkdir -p out
           cd app
           xcodebuild test \
             -project AirPodsCompat.xcodeproj \
             -scheme AirPodsCompat \
             -destination "id=${{ steps.sim.outputs.udid }}" \
             CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO \
-            2>&1 | tail -150
+            -resultBundlePath ../out/Tests.xcresult \
+            2>&1 | tee ../out/simulator-tests.log
+
+      - name: Capture companion screens
+        run: |
+          set -euo pipefail
+          SIM="${{ steps.sim.outputs.udid }}"
+          xcrun simctl ui "$SIM" appearance light
+          xcrun simctl launch "$SIM" com.justintunsday.airpodscompat.app
+          sleep 2
+          xcrun simctl io "$SIM" screenshot out/companion-light.png
+          xcrun simctl terminate "$SIM" com.justintunsday.airpodscompat.app
+          xcrun simctl ui "$SIM" appearance dark
+          xcrun simctl launch "$SIM" com.justintunsday.airpodscompat.app --diagnostics
+          sleep 2
+          xcrun simctl io "$SIM" screenshot out/diagnostics-dark.png
+
+      - name: Upload test results and visual checks
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: airpodscompat-test-results
+          path: out/
+          retention-days: 30

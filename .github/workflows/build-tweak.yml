@@ -1,78 +1,67 @@
 name: Build Tweak
-
 on:
   workflow_dispatch:
+  pull_request:
+    paths: ["tweak/**", "models/**", "tools/**", "tests/**", "packaging/**", ".github/workflows/**"]
   push:
-    branches: [main]
-    paths:
-      - "tweak/**"
-      - ".github/workflows/build-tweak.yml"
-
+    branches: [main, codex/airpodscompat-architecture-refactor]
+    paths: ["tweak/**", "models/**", "tools/**", "tests/**", "packaging/**", ".github/workflows/**"]
+permissions:
+  contents: read
 jobs:
   deb:
     runs-on: macos-15
     timeout-minutes: 30
-    permissions:
-      contents: read
-
+    strategy:
+      fail-fast: false
+      matrix:
+        scheme: [rootless, rootful]
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Test UI resource policy
-        run: |
-          clang -std=c11 -Wall -Wextra -Werror tests/legacy_resource_policy.c -o /tmp/ac-policy-tests
-          /tmp/ac-policy-tests
-
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Policy, model registry and integration tests
+        run: python3 tools/run_tests.py
       - name: Install toolchain
+        run: brew install ldid xz dpkg
+      - name: Install pinned Theos and SDKs
         run: |
-          brew install ldid xz || true
-
-      - name: Install Theos
-        run: |
+          set -euo pipefail
           THEOS="$RUNNER_TEMP/theos"
-          git clone --recursive --depth 1 https://github.com/theos/theos.git "$THEOS"
-          rm -rf "$THEOS/sdks"
-          git clone --depth 1 https://github.com/theos/sdks "$THEOS/sdks"
-          ls "$THEOS/sdks" | head -5
+          git clone https://github.com/theos/theos.git "$THEOS"
+          git -C "$THEOS" checkout 6e7b8c40e0f5f9f5b2377800dc1e42cd2560d24a
+          git -C "$THEOS" submodule update --init --recursive --depth 1
+          rm "$THEOS/sdks/.keep"
+          rmdir "$THEOS/sdks"
+          git init "$THEOS/sdks"
+          git -C "$THEOS/sdks" remote add origin https://github.com/theos/sdks
+          git -C "$THEOS/sdks" fetch --depth 1 origin 0222fd5413cf4b9af096f37b4621afa2688572f7
+          git -C "$THEOS/sdks" checkout FETCH_HEAD
           echo "THEOS=$THEOS" >> "$GITHUB_ENV"
-
-      - name: Build rootless package
+          printf '#define AC_BUILD_ID "%s"\n' "$GITHUB_SHA" > tweak/Core/BuildVersion.h
+      - name: Build package
+        env:
+          SCHEME: ${{ matrix.scheme }}
         run: |
-          make -C tweak package FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=rootless
+          set -euo pipefail
           mkdir -p dist
-          for f in tweak/packages/*.deb; do
-            arch="$(basename "$f" .deb | awk -F_ '{print $NF}')"
-            cp "$f" "dist/AirPodsCompat-rootless-${arch}.deb"
+          if [ "$SCHEME" = rootless ]; then
+            make -C tweak package FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=rootless 2>&1 | tee dist/build.log
+          else
+            make -C tweak package FINALPACKAGE=1 THEOS_PACKAGE_ARCH=iphoneos-arm THEOS_PACKAGE_INSTALL_PREFIX= 2>&1 | tee dist/build.log
+          fi
+          for file in tweak/packages/*.deb; do
+            arch="$(basename "$file" .deb | awk -F_ '{print $NF}')"
+            target="dist/AirPodsCompat-${SCHEME}-${arch}.deb"
+            cp "$file" "$target"
+            python3 tools/validate_package.py "$target" --scheme "$SCHEME"
           done
-          ls -la dist/
-
-      - name: Build rootful package
-        run: |
-          rm -rf tweak/packages
-          make -C tweak clean >/dev/null 2>&1 || true
-          make -C tweak package FINALPACKAGE=1 \
-            THEOS_PACKAGE_ARCH=iphoneos-arm \
-            THEOS_PACKAGE_INSTALL_PREFIX=
-          for f in tweak/packages/*.deb; do
-            arch="$(basename "$f" .deb | awk -F_ '{print $NF}')"
-            cp "$f" "dist/AirPodsCompat-rootful-${arch}.deb"
-          done
-          {
-            echo "AirPodsCompat packages"
-            echo "  AirPodsCompat-rootless-iphoneos-arm64.deb -> rootless jailbreaks (Dopamine/ElleKit/roothide), installs to /var/jb"
-            echo "  AirPodsCompat-rootful-iphoneos-arm.deb    -> rootful jailbreaks (unc0ver/checkra1n/palera1n), installs to /"
-            echo ""
-            echo "Install the matching one with Sileo/Zebra (or dpkg -i <deb>), then reboot userspace."
-            echo "Check with: dpkg-deb -f <deb> Architecture"
-          } > dist/INSTALL.txt
-          ls -la dist/
-
-      - name: Upload debs
-        uses: actions/upload-artifact@v4
+          cp docs/INSTALL.md dist/INSTALL.md
+          cd dist
+          shasum -a 256 *.deb > SHA256SUMS
+      - name: Upload packages, checksums and logs
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: airpodscompat-deb
-          path: |
-            dist/*.deb
-            dist/INSTALL.txt
+          name: airpodscompat-${{ matrix.scheme }}
+          path: dist/
           if-no-files-found: error
           retention-days: 30

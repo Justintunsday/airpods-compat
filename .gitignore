@@ -10,3 +10,4 @@ app/Payload/
 *.xcresult/
 out/
 .build/
+tweak/Core/BuildVersion.h

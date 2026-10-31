@@ -2,10 +2,13 @@ name: Build App
 
 on:
   workflow_dispatch:
+  pull_request:
+    paths: ["app/**", "models/**", ".github/workflows/**"]
   push:
-    branches: [main]
+    branches: [main, codex/airpodscompat-architecture-refactor]
     paths:
       - "app/**"
+      - "models/**"
       - ".github/workflows/build-app.yml"
 
 jobs:
@@ -16,7 +19,7 @@ jobs:
       contents: read
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Install XcodeGen
         run: brew install xcodegen
@@ -29,6 +32,7 @@ jobs:
 
       - name: Build unsigned app
         run: |
+          set -o pipefail
           cd app
           xcodebuild \
             -project AirPodsCompat.xcodeproj \
@@ -37,7 +41,7 @@ jobs:
             -sdk iphoneos \
             -derivedDataPath build \
             CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
-            build
+            build 2>&1 | tee ../app-build.log
 
       - name: Package unsigned ipa
         run: |
@@ -46,12 +50,23 @@ jobs:
           mkdir -p Payload
           cp -R "build/Build/Products/Release-iphoneos/AirPodsCompat.app" Payload/
           zip -qry AirPodsCompat-unsigned.ipa Payload
+          shasum -a 256 AirPodsCompat-unsigned.ipa > SHA256SUMS
           ls -la AirPodsCompat-unsigned.ipa
 
       - name: Upload ipa
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: airpodscompat-app
-          path: app/AirPodsCompat-unsigned.ipa
+          path: |
+            app/AirPodsCompat-unsigned.ipa
+            app/SHA256SUMS
           if-no-files-found: error
           retention-days: 30
+
+      - name: Upload compiler log
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: airpodscompat-app-build-log
+          path: app-build.log
+          if-no-files-found: ignore

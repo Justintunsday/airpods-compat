@@ -1,0 +1,17 @@
+name: Policy and integration checks
+on:
+  workflow_dispatch:
+  pull_request:
+    paths: ["tweak/**", "app/**", "models/**", "tools/**", "tests/**", "packaging/**", ".github/workflows/**"]
+  push:
+    branches: [main, codex/airpodscompat-architecture-refactor]
+    paths: ["tweak/**", "app/**", "models/**", "tools/**", "tests/**", "packaging/**", ".github/workflows/**"]
+permissions:
+  contents: read
+jobs:
+  policy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Exhaustive policy, registry and hook contracts
+        run: python3 tools/run_tests.py

@@ -1,5 +1,8 @@
 #import "Runtime.h"
 #import <unistd.h>
+#if __has_include("BuildVersion.h")
+#include "BuildVersion.h"
+#endif
 #ifndef AC_BUILD_ID
 #define AC_BUILD_ID "development"
 #endif

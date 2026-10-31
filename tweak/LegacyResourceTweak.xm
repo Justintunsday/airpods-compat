@@ -10,8 +10,9 @@ static void ACResourceImageAdded(const struct mach_header *image, intptr_t slide
 %ctor {
     @autoreleasepool {
         ACLoadConfig();
+        unsigned os = (unsigned)NSProcessInfo.processInfo.operatingSystemVersion.majorVersion;
         if (!gEnabled || !ACProcessIsResourceClient(ACProcessName().UTF8String) ||
-            NSProcessInfo.processInfo.operatingSystemVersion.majorVersion != 16) return;
+            (os != 16 && os != 18 && os != 26)) return;
         NSDictionary *prefs = ACReadPreferences();
         if (prefs[@"LegacyRouteResourcesEnabled"])
             gRouteResourcesEnabled = [prefs[@"LegacyRouteResourcesEnabled"] boolValue];

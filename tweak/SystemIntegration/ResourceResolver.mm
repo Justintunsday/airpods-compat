@@ -1,4 +1,4 @@
-// Included by Tweak.xm after config/helpers. UI resources only, iOS 16.
+// Native resource factories only. The iOS 16 algorithm retains its tested target.
 #import "../LegacyResourcePolicy.h"
 #import "../Core/Runtime.h"
 #import <objc/message.h>
@@ -58,7 +58,13 @@ static id ACResourceRouteModel(id self, SEL cmd) {
     id model = orig_ACRouteModel(self, cmd);
     if (gACRouteResourceDepth && [model isKindOfClass:NSString.class] &&
         ACIsAirPods5RouteModel([model UTF8String])) {
-        return @"BTHeadphones76,8211";
+        unsigned os = (unsigned)NSProcessInfo.processInfo.operatingSystemVersion.majorVersion;
+        if (os == 16) return @"BTHeadphones76,8211";
+        uint32_t pid = ACRouteModelProductID([model UTF8String]);
+        ACCompatibilityEnvironment environment = {os, (bool)gEnabled, (bool)gBorrowEnabled,
+            (bool)ACNativeProductRecord(pid), (bool)ACNativeProductRecord(0x201b), 0};
+        auto decision = ACCompatibilitySelect(pid, ACContextRouteResource, environment);
+        if (decision.lookupProductID != pid) return @"BTHeadphones76,8219";
     }
     return model;
 }
@@ -79,13 +85,24 @@ static id ACBatteryGlyphName(id self, SEL cmd, BOOL *isImage) {
     NSInteger pid = ((NSInteger (*)(id, SEL))objc_msgSend)(self, @selector(productIdentifier));
     NSInteger vendor = ((NSInteger (*)(id, SEL))objc_msgSend)(self, @selector(vendor));
     NSInteger transport = ((NSInteger (*)(id, SEL))objc_msgSend)(self, @selector(transportType));
-    uint32_t mapped = pid >= 0 && pid <= UINT32_MAX
-        ? ACBatteryResourcePID((uint32_t)pid, vendor, transport) : (uint32_t)pid;
+    unsigned os = (unsigned)NSProcessInfo.processInfo.operatingSystemVersion.majorVersion;
+    uint32_t mapped = (uint32_t)pid;
+    if (pid >= 0 && pid <= UINT32_MAX) {
+        if (os == 16) mapped = ACBatteryResourcePID((uint32_t)pid, vendor, transport);
+        else if (vendor == 1 && transport == 3 &&
+                 (!original || [original isEqual:@"headphones"])) {
+            ACCompatibilityEnvironment environment = {os, (bool)gEnabled, (bool)gBorrowEnabled,
+                (bool)ACNativeProductRecord((uint32_t)pid), (bool)ACNativeProductRecord(0x201b), 0};
+            mapped = ACCompatibilitySelect((uint32_t)pid, ACContextBatteryResource, environment).lookupProductID;
+        }
+    }
     if (pid < 0 || pid > UINT32_MAX || mapped == (uint32_t)pid) return original;
 
     Class cls = objc_getClass("BCBatteryDevice");
     NSUInteger parts = ((NSUInteger (*)(id, SEL))objc_msgSend)(self, @selector(parts));
-    NSUInteger resourceParts = ACBatteryResourceParts((uint32_t)pid, vendor, transport, parts);
+    // Modern part-enum semantics have no device evidence: preserve every part,
+    // including Single, instead of extending the iOS 16 combined-glyph rule.
+    NSUInteger resourceParts = os == 16 ? ACBatteryResourceParts((uint32_t)pid, vendor, transport, parts) : parts;
     // A disposable resource model: never replace/merge the live battery device.
     id resource = ((id (*)(id, SEL, id, NSInteger, NSInteger, NSUInteger, id))objc_msgSend)(
         cls, @selector(batteryDeviceWithIdentifier:vendor:productIdentifier:parts:matchIdentifier:),
@@ -99,18 +116,21 @@ static id ACBatteryGlyphName(id self, SEL cmd, BOOL *isImage) {
     if (![borrowed isKindOfClass:NSString.class] || ![borrowed length] ||
         [borrowed isEqualToString:@"headphones"]) return original;
     if (isImage) *isImage = borrowedIsImage;
+    ACRecordHookStatus(@"battery", @"borrowed-presentation-only");
     return borrowed;
 }
 
 void ACInstallLegacyResources(void) {
-    if (!ACIsResourceUIProcess() ||
-        NSProcessInfo.processInfo.operatingSystemVersion.majorVersion != 16) return;
+    unsigned os = (unsigned)NSProcessInfo.processInfo.operatingSystemVersion.majorVersion;
+    if (!ACIsResourceUIProcess() || (os != 16 && os != 18 && os != 26)) return;
+    if (os >= 18 && (!gBorrowEnabled || !ACNativeProductRecord(0x201b))) return;
     Class route = objc_getClass("MPAVOutputDeviceRoute");
     Class asset = objc_getClass("MRUOutputDeviceAsset");
     if (gRouteResourcesEnabled && !orig_ACRouteModel &&
         ACSignatureMatches(route, @selector(productIdentifier), "@", @[], NO)) {
         MSHookMessageEx(route, @selector(productIdentifier), (IMP)ACResourceRouteModel,
                         (IMP *)&orig_ACRouteModel);
+        if (orig_ACRouteModel) ACRecordHookStatus(@"route", @"installed-scoped-lookup");
     }
     if (gRouteResourcesEnabled && orig_ACRouteModel && !orig_ACResourceAssetInit &&
         ACSignatureMatches(asset, @selector(initWithOutputDeviceRoute:), "@", @[@"@"], NO)) {

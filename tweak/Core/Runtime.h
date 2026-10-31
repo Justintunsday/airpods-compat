@@ -24,6 +24,7 @@ NSString *ACProcessName(void);
 NSDictionary *ACReadPreferences(void);
 void ACLoadConfig(void);
 void ACWithRegistrationGuard(void (^work)(void));
+void ACRecordHookStatus(NSString *module, NSString *state);
 BOOL ACMethodMatches(Class cls, SEL sel, const char *ret, NSArray<NSString *> *args, BOOL classMethod);
 BOOL ACClassOwnsSelector(Class cls, SEL sel);
 void *ACResolveHeadphoneSymbol(const char *symbol);

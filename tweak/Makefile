@@ -11,7 +11,7 @@ INSTALL_TARGET_PROCESSES := SpringBoard bluetoothd
 include $(THEOS)/makefiles/common.mk
 
 TWEAK_NAME := AirPodsCompat AirPodsCompatResources
-AC_COMMON_FILES := Core/ConfigurationManager.mm Platform/RuntimeSymbolResolver.mm
+AC_COMMON_FILES := Core/ConfigurationManager.mm Core/DiagnosticsManager.mm Platform/RuntimeSymbolResolver.mm
 AirPodsCompat_FILES := Tweak.xm $(AC_COMMON_FILES) Core/CrashGuard.mm \
     Models/AirPodsModelRegistry.mm Bluetooth/AccessoryRegistration.mm \
     Bluetooth/DeviceIdentity.mm Hooks/LegacySettingsHooks.mm \
@@ -25,3 +25,10 @@ AirPodsCompatResources_CCFLAGS := -std=c++14
 AirPodsCompatResources_FRAMEWORKS := Foundation
 
 include $(THEOS_MAKE_PATH)/tweak.mk
+
+TOOL_NAME := acprefs
+acprefs_FILES := Tools/acprefs.m
+acprefs_CFLAGS := -fobjc-arc
+acprefs_FRAMEWORKS := Foundation
+acprefs_INSTALL_PATH := /usr/bin
+include $(THEOS_MAKE_PATH)/tool.mk

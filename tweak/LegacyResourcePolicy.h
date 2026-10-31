@@ -2,6 +2,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
+#include "Models/CompatibilityPolicy.h"
 
 static inline bool ACIsAirPods5Bud(uint32_t pid) {
     return pid == 0x2036 || pid == 0x2037 || pid == 0x2030 || pid == 0x2032;
@@ -30,4 +31,13 @@ static inline unsigned long ACBatteryResourceParts(uint32_t pid, long vendor,
     // Legacy glyph factories have no model-specific image for Single (parts 0).
     // Select a combined earbud glyph, or a case glyph only for a known case PID.
     return ACIsAirPods5Bud(pid) ? 3 : 4;
+}
+
+static inline uint32_t ACRouteModelProductID(const char *model) {
+    if (!model) return 0;
+    if (!strcmp(model, "BTHeadphones76,8246")) return 0x2036;
+    if (!strcmp(model, "BTHeadphones76,8240")) return 0x2030;
+    if (!strcmp(model, "BTHeadphones76,8247")) return 0x2037;
+    if (!strcmp(model, "BTHeadphones76,8242")) return 0x2032;
+    return 0;
 }

@@ -65,6 +65,7 @@ void ACInstallHeadphoneConfigHooks(void) {
         SEL selector = sel_registerName(hook.name);
         if (!*hook.original && ACMethodMatches(controller, selector, hook.result, @[], NO)) {
             MSHookMessageEx(controller, selector, hook.replacement, hook.original);
+            if (*hook.original) ACRecordHookStatus(@"settings18", @"installed-partial-read-queries");
             AC_LOG(@"iOS18 scoped Settings lookup installed: %s (live verification required)", hook.name);
         }
     }

@@ -30,5 +30,8 @@ int main(void) {
     assert(!ACIsAirPods5RouteModel("BTHeadphones76,8211"));
     assert(!ACIsAirPods5RouteModel("BTHeadphones76,8245"));
     assert(!ACIsAirPods5RouteModel(""));
+    assert(ACRouteModelProductID("BTHeadphones76,8246") == 0x2036);
+    assert(ACRouteModelProductID("BTHeadphones76,8219") == 0);
+    assert(ACRouteModelProductID("BTHeadphones76,8246suffix") == 0);
     return 0;
 }

@@ -45,6 +45,11 @@ class RepositoryTests(unittest.TestCase):
         registration = (ROOT / 'tweak/Bluetooth/AccessoryRegistration.mm').read_text()
         self.assertNotIn('ACCompatibilitySelect', registration)
         self.assertIn('ACWithRegistrationGuard', registration)
+    def test_identity_guards_do_not_wrap_general_settings_loading(self):
+        text = (ROOT / 'tweak/Bluetooth/IdentityBoundaries.mm').read_text()
+        self.assertNotIn('@"loadAccessoryInfo"', text)
+        self.assertNotIn('@"loadAccessorySettings"', text)
+        self.assertIn('@"loadAccessoryFirmwareInfo"', text)
 
 
 if __name__ == '__main__':

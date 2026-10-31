@@ -19,10 +19,12 @@ def main():
     parser.add_argument('--strategy', required=True)
     parser.add_argument('--out', required=True)
     parser.add_argument('--bridge', help='Optional compiled ObjC bridge JS prefix for Frida 17+')
+    parser.add_argument('--script', help='Use another explicitly selected probe JS file')
     args = parser.parse_args()
     device = frida.get_device_manager().add_remote_device(args.device)
     process = next(p for p in device.enumerate_processes() if p.name == args.process)
-    source = (Path(__file__).resolve().parents[1] / 'analysis/runtime_probe.js').read_text(encoding='utf-8')
+    script_path = Path(args.script) if args.script else Path(__file__).resolve().parents[1] / 'analysis/runtime_probe.js'
+    source = script_path.read_text(encoding='utf-8')
     if args.bridge:
         source = Path(args.bridge).read_text(encoding='utf-8') + '\nglobalThis.ObjC = bridge;\n' + source
     completed = threading.Event()

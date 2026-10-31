@@ -26,11 +26,17 @@ static void ACIdentitySetting(id object, SEL selector, id value, id specifier) {
 }
 
 void ACInstallIdentityBoundaries(void) {
+    // Preserve the device-tested iOS 16/17 HeadphoneConfigs path. Applying new
+    // identity guards there changed legacy capability construction in the first
+    // refactor device trial. Modern lookup scopes already retain real devices.
+    if (NSProcessInfo.processInfo.operatingSystemVersion.majorVersion < 18) return;
     if (![ACProcessName() isEqualToString:@"Preferences"]) return;
     Class controller = NSClassFromString(@"BTSDeviceConfigController");
     if (!controller) return;
     if (!originals) originals = [NSMutableDictionary dictionary];
-    for (NSString *name in @[@"loadAccessoryFirmwareInfo", @"loadAccessoryInfo", @"refreshFindMyStatus",
+    // loadAccessoryInfo also builds presentation/capability state. It must not
+    // disable legacy compatibility for an entire Settings construction pass.
+    for (NSString *name in @[@"loadAccessoryFirmwareInfo", @"refreshFindMyStatus",
                              @"getFindMyUrl", @"presentFindMyLink", @"forgetDevice"]) {
         SEL selector = NSSelectorFromString(name);
         if (originals[name] || !ACClassOwnsSelector(controller, selector) ||

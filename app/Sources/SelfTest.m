@@ -320,7 +320,7 @@ NSString *ACRunSelfTest(void) {
     [out appendString:@"\n"];
 
     // 3. native support inventory
-    [out appendString:@"[系统原生 AirPods 5 支持]\n"];
+    [out appendString:@"[系统原生配件型号登记]\n"];
     NSUInteger nativeCount = 0;
     for (NSDictionary *model in ACTestModels()) {
         NSString *clsName = [@"UARPSupportedAccessory" stringByAppendingString:model[@"model"]];
@@ -337,7 +337,7 @@ NSString *ACRunSelfTest(void) {
         [out appendFormat:@"  [有] %@ pid=0x%x name=%@%@\n", model[@"model"], pid, name ?: @"-",
              alts.count ? [NSString stringWithFormat:@" alt=%@", [alts componentsJoinedByString:@","]] : @""];
     }
-    [out appendFormat:@"  结论: 系统原生认识 %lu/%lu 个 AirPods 5 类\n\n",
+    [out appendFormat:@"  结论: 系统原生认识 %lu/%lu 个表内配件类（不等于功能支持）\n\n",
         (unsigned long)nativeCount, (unsigned long)ACTestModels().count];
 
     // 4. HeadphoneManager / CoreBluetooth extras

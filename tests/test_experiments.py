@@ -23,6 +23,8 @@ class ExperimentTests(unittest.TestCase):
             self.assertEqual(set(main['Executables']), {'bluetoothd', 'bluetoothuserd', 'bluetoothaudiod', 'uarpd'})
             self.assertNotIn('Bundles', main)
             self.assertEqual(resource['Executables'], ['AirPodsCompat-Disabled-Experiment'])
+            controls = plistlib.loads((Path(output) / 'AirPodsCompatControls.plist').read_bytes())['Filter']
+            self.assertEqual(controls['Executables'], ['AirPodsCompat-Disabled-Experiment'])
 
     def test_matrix_never_fabricates_passes(self):
         matrix = module('experiment_matrix').blank_matrix()

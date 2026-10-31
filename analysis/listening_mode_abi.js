@@ -7,7 +7,7 @@ for (const selector of ['- listeningMode', '- setListeningMode:']) {
   if (!method) continue;
   let pc = method.implementation.strip();
   const lines = [];
-  for (let i = 0; i < 40; i++) {
+  for (let i = 0; i < 100; i++) {
     const instruction = Instruction.parse(pc);
     let line = instruction.toString();
     if (instruction.mnemonic === 'bl' || instruction.mnemonic === 'b') {

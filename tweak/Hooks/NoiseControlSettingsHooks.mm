@@ -35,6 +35,8 @@ static id ACNoiseSpecifiers(id controller, SEL selector) {
     id device = ((id (*)(id, SEL))objc_msgSend)(controller, @selector(device));
     NSDictionary *snapshot = ACNoiseControlSnapshot(device);
     if (!device || ![snapshot[@"available"] boolValue]) return original;
+    if (NSProcessInfo.processInfo.operatingSystemVersion.majorVersion >= 18 &&
+        ACNativeProductRecord([snapshot[@"hardwareProductID"] unsignedIntValue])) return original;
     objc_setAssociatedObject(controller, deviceKey, device, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
     Class specifier = NSClassFromString(@"PSSpecifier");
     NSMutableArray *result = [NSMutableArray array];
@@ -47,7 +49,9 @@ static id ACNoiseSpecifiers(id controller, SEL selector) {
     }
     id group = ((id (*)(id, SEL, id))objc_msgSend)(specifier, @selector(groupSpecifierWithName:), @"AirPods Noise Control");
     ((void (*)(id, SEL, id, id))objc_msgSend)(group, @selector(setProperty:forKey:), @"AirPodsCompat.Noise.Group", @"id");
-    NSString *footer = [NSString stringWithFormat:@"Device-reported mode: %@. Rejected commands leave the current mode unchanged.", snapshot[@"currentMode"]];
+    NSArray *names = @[@"Unavailable", @"Off", @"Noise Cancellation", @"Transparency", @"Adaptive"];
+    unsigned current = [snapshot[@"currentMode"] unsignedIntValue];
+    NSString *footer = [NSString stringWithFormat:@"Current mode: %@. If switching is unavailable, the current mode stays unchanged.", current < names.count ? names[current] : names[0]];
     ((void (*)(id, SEL, id, id))objc_msgSend)(group, @selector(setProperty:forKey:), footer, @"footerText");
     [result addObject:group];
     struct { unsigned mode; NSString *name; const char *action; } modes[] = {
@@ -71,6 +75,7 @@ static id ACNoiseSpecifiers(id controller, SEL selector) {
 void ACInstallNoiseControlSettingsHooks(void) {
     unsigned os = (unsigned)NSProcessInfo.processInfo.operatingSystemVersion.majorVersion;
     if (originalSpecifiers || os < 16 || os > 18 || ![ACProcessName() isEqualToString:@"Preferences"]) return;
+    if (os >= 18 && ACNativeAirPods5FeatureContent()) return;
     Class cls = NSClassFromString(@"BTSDeviceConfigController");
     Class specifier = NSClassFromString(@"PSSpecifier");
     if (!ACMethodMatches(cls, @selector(specifiers), "@", @[], NO) ||

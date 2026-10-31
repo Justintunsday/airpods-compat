@@ -8,6 +8,13 @@ if (!ObjC.classes.BTSDeviceConfigController) {
 }
 ObjC.schedule(ObjC.mainQueue, () => {
   const result = {controllers: [], methods: {}};
+  if (ObjC.classes.PSSpecifier) {
+    result.specifierSignatures = {};
+    for (const selector of ['+ preferenceSpecifierNamed:target:set:get:detail:cell:edit:', '+ groupSpecifierWithName:', '- setButtonAction:', '- propertyForKey:', '- setProperty:forKey:']) {
+      const method = ObjC.classes.PSSpecifier[selector];
+      if (method) result.specifierSignatures[selector] = method.types;
+    }
+  }
   for (const name of ['CBDevice', 'BluetoothDevice', 'BTSDevice', 'CUBluetoothDevice', 'HPSBatteryStatusView', 'BTSDeviceConfigController']) {
     const cls = ObjC.classes[name];
     if (!cls) continue;

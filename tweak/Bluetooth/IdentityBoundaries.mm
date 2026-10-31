@@ -27,8 +27,8 @@ static void ACIdentitySetting(id object, SEL selector, id value, id specifier) {
 
 void ACInstallIdentityBoundaries(void) {
     // Preserve the device-tested iOS 16/17 HeadphoneConfigs path. Applying new
-    // identity guards there changed legacy capability construction in the first
-    // refactor device trial. Modern lookup scopes already retain real devices.
+    // identity guards there remain unverified after the initial device feedback.
+    // Modern lookup scopes already retain real devices.
     if (NSProcessInfo.processInfo.operatingSystemVersion.majorVersion < 18) return;
     if (![ACProcessName() isEqualToString:@"Preferences"]) return;
     Class controller = NSClassFromString(@"BTSDeviceConfigController");

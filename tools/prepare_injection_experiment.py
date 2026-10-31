@@ -26,21 +26,24 @@ def prepare(strategy, output, client_bundle=None, client_process=None):
     disabled = {'Filter': {'Executables': ['AirPodsCompat-Disabled-Experiment']}}
     main = parse_filter((ROOT / 'tweak/AirPodsCompat.plist').read_text())
     resource = parse_filter((ROOT / 'tweak/AirPodsCompatResources.plist').read_text())
-    if strategy == 'no-tweak': main = resource = disabled
+    controls = parse_filter((ROOT / 'tweak/AirPodsCompatControls.plist').read_text())
+    if strategy == 'no-tweak': main = resource = controls = disabled
     elif strategy == 'service-only':
         main = {'Filter': {'Executables': ['bluetoothd', 'bluetoothuserd', 'bluetoothaudiod', 'uarpd']}}
         resource = disabled
+        controls = disabled
     elif strategy == 'system-only':
         resource = parse_filter((ROOT / 'packaging/resource-filters/system-only.plist').read_text())
     elif strategy == 'existing':
         for name in ['AirPodsCompat', 'AirPodsCompatResources']:
             text = subprocess.check_output(['git', 'show', f'a30615d:tweak/{name}.plist'], cwd=ROOT).decode()
             (output / f'{name}.plist').write_text(text, encoding='utf-8')
+        (output / 'AirPodsCompatControls.plist').write_bytes(plistlib.dumps(disabled))
         return
     if client_bundle:
         resource['Filter'].setdefault('Bundles', []).append(client_bundle)
         (output / 'ExtraResourceClients.plist').write_bytes(plistlib.dumps({'ExtraResourceClientProcesses': [client_process]}))
-    for name, value in [('AirPodsCompat', main), ('AirPodsCompatResources', resource)]:
+    for name, value in [('AirPodsCompat', main), ('AirPodsCompatResources', resource), ('AirPodsCompatControls', controls)]:
         (output / f'{name}.plist').write_bytes(plistlib.dumps(value))
 
 

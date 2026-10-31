@@ -34,7 +34,7 @@ def main():
     def receive(message, _data):
         result.update(message=message, strategy=args.strategy,
                       timestamp=datetime.datetime.now(datetime.timezone.utc).isoformat(),
-                      instrumentation=('temporary native listening-mode command/readback; original mode restored by script'
+                      instrumentation=('temporary native listening-mode command/readback; original-mode restoration attempted and recorded by script'
                                        if args.mode_command else 'read-only Frida attachment; no compatibility hook installed by probe'))
         completed.set()
 

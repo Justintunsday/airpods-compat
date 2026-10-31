@@ -30,11 +30,13 @@ static id ACNoiseDevice(id preferredDevice) {
         // productId (lowercase d) is the unmodified hardware getter. Never use
         // the legacy presentation productID alias or a name to select hardware.
         if (!ACMethodMatches(cls, @selector(productId), "I", @[], NO) ||
+            !ACMethodMatches(cls, @selector(vendorId), "I", @[], NO) ||
             !ACMethodMatches(cls, @selector(listeningMode), "I", @[], NO) ||
             !ACMethodMatches(cls, @selector(listeningModeConfigs), "I", @[], NO) ||
             !ACMethodMatches(cls, @selector(setListeningMode:), "B", @[@"I"], NO)) continue;
         unsigned pid = ((unsigned (*)(id, SEL))objc_msgSend)(device, @selector(productId));
-        if (!ACIsAirPods5(pid)) continue;
+        unsigned vendor = ((unsigned (*)(id, SEL))objc_msgSend)(device, @selector(vendorId));
+        if (!ACIsAirPods5(pid) || vendor != 0x004c) continue;
         if (selected) return nil; // ambiguous: never choose the wrong headphones
         selected = device;
     }
@@ -44,19 +46,22 @@ static id ACNoiseDevice(id preferredDevice) {
 static NSDictionary *ACNoiseSnapshot(id device) {
     if (!device) return @{@"available": @NO, @"reason": @"No single connected AirPods 5 with a supported control API."};
     unsigned pid = ((unsigned (*)(id, SEL))objc_msgSend)(device, @selector(productId));
+    unsigned vendor = ((unsigned (*)(id, SEL))objc_msgSend)(device, @selector(vendorId));
     unsigned current = ((unsigned (*)(id, SEL))objc_msgSend)(device, @selector(listeningMode));
     unsigned mask = ((unsigned (*)(id, SEL))objc_msgSend)(device, @selector(listeningModeConfigs));
     unsigned os = (unsigned)NSProcessInfo.processInfo.operatingSystemVersion.majorVersion;
     NSMutableArray *allowed = [NSMutableArray array];
     for (unsigned mode = 1; mode <= 4; mode++)
-        if (ACListeningModeAllowed(pid, os, true, true, mask, current, mode)) [allowed addObject:@(mode)];
+        if (ACListeningModeAllowed(pid, vendor, os, true, true, mask, current, mode)) [allowed addObject:@(mode)];
     return @{@"available": @(allowed.count > 0), @"hardwareProductID": @(pid),
+             @"vendorID": @(vendor),
              @"currentMode": @(current), @"reportedModeConfigs": @(mask), @"allowedModes": allowed};
 }
 
 NSDictionary *ACNoiseControlSnapshot(id preferredDevice) {
-    if (!gEnabled || (ACReadPreferences()[@"NoiseControlsEnabled"] &&
-                     ![ACReadPreferences()[@"NoiseControlsEnabled"] boolValue]))
+    NSDictionary *preferences = ACReadPreferences();
+    if (!gEnabled || (preferences[@"NoiseControlsEnabled"] &&
+                     ![preferences[@"NoiseControlsEnabled"] boolValue]))
         return @{@"available": @NO, @"reason": @"Noise controls are disabled."};
     return ACNoiseSnapshot(ACNoiseDevice(preferredDevice));
 }

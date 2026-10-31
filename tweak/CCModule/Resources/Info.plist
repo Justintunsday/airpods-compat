@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+  <key>CFBundleName</key><string>AirPods Noise Control</string>
+  <key>CFBundleDisplayName</key><string>AirPods Noise Control</string>
+  <key>CFBundleExecutable</key><string>AirPodsCompatNoiseControl</string>
+  <key>CFBundleIdentifier</key><string>com.justintunsday.airpodscompat.noisecontrol</string>
+  <key>CFBundlePackageType</key><string>BNDL</string>
+  <key>CFBundleShortVersionString</key><string>0.1.0</string>
+  <key>CFBundleVersion</key><string>1</string>
+  <key>MinimumOSVersion</key><string>16.0</string>
+  <key>NSPrincipalClass</key><string>AirPodsCompatNoiseControl</string>
+  <key>CFBundleSupportedPlatforms</key><array><string>iPhoneOS</string></array>
+  <key>UIDeviceFamily</key><array><integer>1</integer><integer>2</integer></array>
+  <key>CCSGetModuleSizeAtRuntime</key><false/>
+  <key>CCSModuleSize</key><dict>
+    <key>Portrait</key><dict><key>Height</key><integer>1</integer><key>Width</key><integer>1</integer></dict>
+    <key>Landscape</key><dict><key>Height</key><integer>1</integer><key>Width</key><integer>1</integer></dict>
+  </dict>
+</dict></plist>

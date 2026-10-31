@@ -22,7 +22,7 @@ int main(int argc, char **argv) {
         NSDictionary *input = [NSDictionary dictionaryWithContentsOfFile:@(argv[2])];
         if (!input) { fprintf(stderr, "Input must be a valid property-list dictionary.\n"); return 1; }
         NSMutableDictionary *preferences = [[NSDictionary dictionaryWithContentsOfFile:path] mutableCopy] ?: [NSMutableDictionary dictionary];
-        NSSet *booleans = [NSSet setWithArray:@[@"Enabled", @"UARPEnabled", @"DiagnosticsEnabled", @"LegacyRouteResourcesEnabled", @"LegacyBatteryResourcesEnabled"]];
+        NSSet *booleans = [NSSet setWithArray:@[@"Enabled", @"UARPEnabled", @"DiagnosticsEnabled", @"LegacyRouteResourcesEnabled", @"LegacyBatteryResourcesEnabled", @"NoiseControlsEnabled"]];
         NSDictionary *strings = @{
             @"Scope": @[@"core", @"all"],
             @"BorrowProfile": @[@"airpods4anc", @"airpodspro2", @"airpodspro3", @"off"],

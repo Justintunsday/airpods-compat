@@ -7,4 +7,5 @@ Maintainer: Justintunsday
 Author: Justintunsday
 Section: Tweaks
 Depends: mobilesubstrate
+Recommends: com.opa334.ccsupport
 Depiction: https://github.com/Justintunsday/airpods-compat

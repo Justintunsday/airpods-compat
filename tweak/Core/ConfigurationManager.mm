@@ -12,7 +12,7 @@ NSDictionary *ACReadPreferences(void) {
     NSDictionary *stored = [NSDictionary dictionaryWithContentsOfFile:ACPrefsPath()];
     NSMutableDictionary *valid = [NSMutableDictionary dictionary];
     for (NSString *key in @[@"Enabled", @"UARPEnabled", @"DiagnosticsEnabled",
-                            @"LegacyRouteResourcesEnabled", @"LegacyBatteryResourcesEnabled"]) {
+                            @"LegacyRouteResourcesEnabled", @"LegacyBatteryResourcesEnabled", @"NoiseControlsEnabled"]) {
         if ([stored[key] isKindOfClass:NSNumber.class]) valid[key] = stored[key];
     }
     for (NSString *key in @[@"Scope", @"BorrowProfile", @"LegacyUIProfile", @"LegacyIconProfile"]) {

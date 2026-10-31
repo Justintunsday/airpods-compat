@@ -36,6 +36,7 @@ struct ContentView: View {
                         .font(.footnote).foregroundStyle(.secondary)
                 }
                 Section("系统资源") {
+                    Toggle("设置与控制中心降噪按钮", isOn: toggle("NoiseControlsEnabled"))
                     Toggle("路由图标兼容", isOn: toggle("LegacyRouteResourcesEnabled"))
                     Toggle("电池图标兼容", isOn: toggle("LegacyBatteryResourcesEnabled"))
                     Text("图标适配不会生成电量数据。默认进程名单包括 SpringBoard、MusicUIService 及已验证过的 Apple 客户端。")

@@ -37,8 +37,12 @@ def validate(path, scheme):
     required = {
         prefix + 'Library/MobileSubstrate/DynamicLibraries/AirPodsCompat.dylib',
         prefix + 'Library/MobileSubstrate/DynamicLibraries/AirPodsCompatResources.dylib',
+        prefix + 'Library/MobileSubstrate/DynamicLibraries/AirPodsCompatControls.dylib',
         prefix + 'Library/MobileSubstrate/DynamicLibraries/AirPodsCompat.plist',
         prefix + 'Library/MobileSubstrate/DynamicLibraries/AirPodsCompatResources.plist',
+        prefix + 'Library/MobileSubstrate/DynamicLibraries/AirPodsCompatControls.plist',
+        prefix + 'Library/ControlCenter/Bundles/AirPodsCompatNoiseControl.bundle/Info.plist',
+        prefix + 'Library/ControlCenter/Bundles/AirPodsCompatNoiseControl.bundle/AirPodsCompatNoiseControl',
         prefix + 'Library/Application Support/AirPodsCompat/AirPodsCompatModels.plist',
         prefix + 'usr/bin/acprefs'
     }
@@ -54,7 +58,7 @@ def validate(path, scheme):
             files[name] = item
         assert required <= files.keys(), required - files.keys()
         for name in required:
-            if name.endswith('.dylib') or name.endswith('/acprefs'):
+            if name.endswith('.dylib') or name.endswith('/acprefs') or name.endswith('/AirPodsCompatNoiseControl'):
                 item = files[name]
                 assert item.mode & 0o111, f'not executable: {name}'
                 binary = archive.extractfile(item).read()

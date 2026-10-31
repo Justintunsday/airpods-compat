@@ -20,6 +20,7 @@ def main():
     parser.add_argument('--out', required=True)
     parser.add_argument('--bridge', help='Optional compiled ObjC bridge JS prefix for Frida 17+')
     parser.add_argument('--script', help='Use another explicitly selected probe JS file')
+    parser.add_argument('--mode-command', action='store_true', help='Label an explicitly authorized native listening-mode write/readback experiment')
     args = parser.parse_args()
     device = frida.get_device_manager().add_remote_device(args.device)
     process = next(p for p in device.enumerate_processes() if p.name == args.process)
@@ -33,7 +34,8 @@ def main():
     def receive(message, _data):
         result.update(message=message, strategy=args.strategy,
                       timestamp=datetime.datetime.now(datetime.timezone.utc).isoformat(),
-                      instrumentation='read-only Frida attachment; no compatibility hook installed by probe')
+                      instrumentation=('temporary native listening-mode command/readback; original mode restored by script'
+                                       if args.mode_command else 'read-only Frida attachment; no compatibility hook installed by probe'))
         completed.set()
 
     session = device.attach(process.pid)

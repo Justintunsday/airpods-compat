@@ -50,6 +50,16 @@ class RepositoryTests(unittest.TestCase):
         self.assertNotIn('@"loadAccessoryInfo"', text)
         self.assertNotIn('@"loadAccessorySettings"', text)
         self.assertIn('@"loadAccessoryFirmwareInfo"', text)
+    def test_noise_controls_are_ui_only_and_use_real_device_identity(self):
+        filter_text = (ROOT / 'tweak/AirPodsCompatControls.plist').read_text()
+        self.assertEqual(set(re.findall(r'"([^"\n]+)"', filter_text)), {'com.apple.Preferences'})
+        adapter = (ROOT / 'tweak/SystemIntegration/NoiseControlAdapter.mm').read_text()
+        self.assertIn('@selector(productId)', adapter)
+        self.assertNotIn('setProductID', adapter)
+        self.assertNotIn('setListeningModeConfigs:', adapter)
+        module = (ROOT / 'tweak/CCModule/NoiseControlModule.mm').read_text()
+        self.assertIn('ACNoiseControlSnapshot', module)
+        self.assertNotIn('_selected =', module)
 
 
 if __name__ == '__main__':

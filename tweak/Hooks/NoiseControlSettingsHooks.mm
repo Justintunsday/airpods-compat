@@ -4,6 +4,15 @@
 
 static id (*originalSpecifiers)(id, SEL);
 static const void *deviceKey = &deviceKey;
+static Ivar controllerDeviceIvar;
+
+static id ACNoiseSettingsDevice(id controller) {
+    if (ACMethodMatches(object_getClass(controller), @selector(device), "@", @[], NO))
+        return ((id (*)(id, SEL))objc_msgSend)(controller, @selector(device));
+    // iOS 16 has no device getter. Read only the runtime-verified object ivar;
+    // never use a hard-coded offset or mutate the controller's device storage.
+    return controllerDeviceIvar ? object_getIvar(controller, controllerDeviceIvar) : nil;
+}
 
 static void ACNoiseAction(id controller, unsigned mode) {
     id device = objc_getAssociatedObject(controller, deviceKey);
@@ -32,7 +41,7 @@ static void ACNoiseOff(id self, SEL cmd) { (void)cmd; ACNoiseAction(self, 1); }
 static id ACNoiseSpecifiers(id controller, SEL selector) {
     id original = originalSpecifiers(controller, selector);
     if (![original isKindOfClass:NSArray.class]) return original;
-    id device = ((id (*)(id, SEL))objc_msgSend)(controller, @selector(device));
+    id device = ACNoiseSettingsDevice(controller);
     NSDictionary *snapshot = ACNoiseControlSnapshot(device);
     if (!device || ![snapshot[@"available"] boolValue]) return original;
     if (NSProcessInfo.processInfo.operatingSystemVersion.majorVersion >= 18 &&
@@ -78,8 +87,11 @@ void ACInstallNoiseControlSettingsHooks(void) {
     if (os >= 18 && ACNativeAirPods5FeatureContent()) return;
     Class cls = NSClassFromString(@"BTSDeviceConfigController");
     Class specifier = NSClassFromString(@"PSSpecifier");
+    Ivar candidate = cls ? class_getInstanceVariable(cls, "_device") : NULL;
+    const char *storageType = candidate ? ivar_getTypeEncoding(candidate) : NULL;
+    controllerDeviceIvar = storageType && storageType[0] == '@' ? candidate : NULL;
     if (!ACMethodMatches(cls, @selector(specifiers), "@", @[], NO) ||
-        !ACMethodMatches(cls, @selector(device), "@", @[], NO) ||
+        (!controllerDeviceIvar && !ACMethodMatches(cls, @selector(device), "@", @[], NO)) ||
         !ACMethodMatches(specifier, @selector(groupSpecifierWithName:), "@", @[@"@"], YES) ||
         !ACMethodMatches(specifier, @selector(propertyForKey:), "@", @[@"@"], NO) ||
         !ACMethodMatches(specifier, @selector(setProperty:forKey:), "v", @[@"@", @"@"], NO) ||

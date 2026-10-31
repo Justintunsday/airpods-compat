@@ -7,6 +7,12 @@ static id ACNoiseDevice(id preferredDevice) {
     static void *framework;
     if (!framework) framework = dlopen("/System/Library/PrivateFrameworks/BluetoothManager.framework/BluetoothManager", RTLD_LAZY);
     if (!framework) return nil;
+    // HeadphoneConfigs' BTSDeviceClassic wraps BluetoothDevice on iOS 16.
+    // Its classicDevice getter is an object-returning API verified on device.
+    if (preferredDevice && ACMethodMatches(object_getClass(preferredDevice), @selector(classicDevice), "@", @[], NO)) {
+        preferredDevice = ((id (*)(id, SEL))objc_msgSend)(preferredDevice, @selector(classicDevice));
+        if (!preferredDevice) return nil;
+    }
     Class managerClass = NSClassFromString(@"BluetoothManager");
     if (!ACMethodMatches(managerClass, @selector(sharedInstance), "@", @[], YES) ||
         !ACMethodMatches(managerClass, @selector(connectedDevices), "@", @[], NO)) return nil;

@@ -15,11 +15,11 @@ ObjC.schedule(ObjC.mainQueue, () => {
       if (method) result.specifierSignatures[selector] = method.types;
     }
   }
-  for (const name of ['CBDevice', 'BluetoothDevice', 'BTSDevice', 'CUBluetoothDevice', 'HPSBatteryStatusView', 'BTSDeviceConfigController']) {
+  for (const name of ['CBDevice', 'BluetoothDevice', 'BTSDevice', 'BTSDeviceClassic', 'CUBluetoothDevice', 'HPSBatteryStatusView', 'BTSDeviceConfigController']) {
     const cls = ObjC.classes[name];
     if (!cls) continue;
     result.methods[name] = {};
-    for (const selector of ['- productID', '- productId', '- proximityPairingProductID', '- getModelName:', '- getProductIDString', '- getDeviceCaseIcon:', '- getAssetsDictionary:']) {
+    for (const selector of ['- device', '- classicDevice', '- address', '- setSpecifier:', '- productID', '- productId', '- proximityPairingProductID', '- getModelName:', '- getProductIDString', '- getDeviceCaseIcon:', '- getAssetsDictionary:']) {
       if (cls[selector]) result.methods[name][selector] = cls[selector].types;
     }
   }
@@ -27,9 +27,21 @@ ObjC.schedule(ObjC.mainQueue, () => {
   if (cls) for (const controller of ObjC.chooseSync(cls)) {
     const record = {};
     try {
-      const device = controller.device();
+      const hasGetter = !!controller['- device'];
+      const device = hasGetter ? controller.device() : controller.$ivars._device;
+      record.deviceStorage = hasGetter ? 'getter' : 'object ivar _device';
       record.deviceClass = device ? device.$className : null;
       if (device) {
+        if (device['- classicDevice']?.types.startsWith('@')) {
+          const native = device.classicDevice();
+          record.nativeDevice = native ? {deviceClass: native.$className, hardwareProductID: Number(native.productId()), vendorID: Number(native.vendorId())} : null;
+        }
+        record.deviceMethods = device.$methods.filter(name => /address|classic|product|device$/i.test(name));
+        record.deviceIvarClasses = {};
+        for (const key of Object.keys(device.$ivars).filter(name => /device/i.test(name))) {
+          const value = device.$ivars[key];
+          record.deviceIvarClasses[key] = value && value.$className ? value.$className : '<non-object or nil>';
+        }
         for (const selector of ['productID', 'productId', 'proximityPairingProductID']) {
           if (device.respondsToSelector_(ObjC.selector(selector))) record[selector] = String(device[selector]());
         }

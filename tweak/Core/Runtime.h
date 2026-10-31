@@ -22,6 +22,7 @@ NSString *ACSupportPath(NSString *name);
 NSString *ACPrefsPath(void);
 NSString *ACProcessName(void);
 NSDictionary *ACReadPreferences(void);
+BOOL ACProcessCanUseResources(void);
 void ACLoadConfig(void);
 void ACWithRegistrationGuard(void (^work)(void));
 void ACRecordHookStatus(NSString *module, NSString *state);

@@ -50,5 +50,10 @@ int main(void) {
     assert(!ACProcessIsResourceClient("ThirdPartyAudio"));
     assert(!ACProcessIsResourceClient(NULL));
     assert(!ACProcessIsResourceClient("MusicHelper"));
+    assert(ACValidOptInResourceClient("ExampleAudio"));
+    assert(!ACValidOptInResourceClient("*"));
+    assert(!ACValidOptInResourceClient("Music*"));
+    assert(!ACValidOptInResourceClient("../Music"));
+    assert(!ACValidOptInResourceClient(""));
     return 0;
 }

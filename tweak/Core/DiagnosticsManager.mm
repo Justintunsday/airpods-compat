@@ -8,7 +8,7 @@
 #endif
 
 void ACRecordHookStatus(NSString *module, NSString *state) {
-    if (!gDiagnosticLogs || (!ACProcessIsResourceClient(ACProcessName().UTF8String) &&
+    if (!gDiagnosticLogs || (!ACProcessCanUseResources() &&
         !ACProcessOwnsSettings(ACProcessName().UTF8String))) return;
     static NSMutableDictionary *states;
     static dispatch_once_t once;

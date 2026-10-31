@@ -36,6 +36,8 @@ jobs:
           test -n "$UDID" && test "$UDID" != "null"
           echo "udid=$UDID" >> "$GITHUB_OUTPUT"
           echo "using simulator: $UDID"
+          xcrun simctl boot "$UDID"
+          xcrun simctl bootstatus "$UDID" -b
 
       - name: Run unit tests (registers all models in the simulator process)
         run: |
@@ -45,6 +47,8 @@ jobs:
           xcodebuild test \
             -project AirPodsCompat.xcodeproj \
             -scheme AirPodsCompat \
+            -derivedDataPath build \
+            -parallel-testing-enabled NO \
             -destination "id=${{ steps.sim.outputs.udid }}" \
             CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO \
             -resultBundlePath ../out/Tests.xcresult \
@@ -54,6 +58,8 @@ jobs:
         run: |
           set -euo pipefail
           SIM="${{ steps.sim.outputs.udid }}"
+          xcrun simctl bootstatus "$SIM" -b
+          xcrun simctl install "$SIM" app/build/Build/Products/Debug-iphonesimulator/AirPodsCompat.app
           xcrun simctl ui "$SIM" appearance light
           xcrun simctl launch "$SIM" com.justintunsday.airpodscompat.app
           sleep 2

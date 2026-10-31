@@ -13,7 +13,9 @@ const read = (object, selector) => {
 };
 
 ObjC.schedule(ObjC.mainQueue, () => {
-  const result = {process: Process.name, hooks: {}, routes: [], batteries: [], limitations: []};
+  const result = {process: ObjC.classes.NSProcessInfo.processInfo().processName().toString(),
+    compatibilityImages: Process.enumerateModules().filter(module => module.name.startsWith('AirPodsCompat')).map(module => module.name),
+    hooks: {}, identities: [], productRecords: [], routes: [], batteries: [], limitations: []};
   for (const [name, selector] of [
     ['MPAVOutputDeviceRoute', '- productIdentifier'],
     ['MPAVRoutingController', '+ _symbolNameForRoute:'],
@@ -24,6 +26,23 @@ ObjC.schedule(ObjC.mainQueue, () => {
   ]) {
     const method = ObjC.classes[name]?.[selector];
     result.hooks[name + selector] = method ? {encoding: method.types, image: moduleFor(method.implementation)} : null;
+  }
+  if (ObjC.classes.CBDevice) {
+    for (const device of ObjC.chooseSync(ObjC.classes.CBDevice).slice(0, 128)) {
+      const productID = read(device, 'productID');
+      const proximityPairingProductID = read(device, 'proximityPairingProductID');
+      if ([8246, 8240, 8247, 8242].includes(Number(productID)) ||
+          [8246, 8240, 8247, 8242].includes(Number(proximityPairingProductID)))
+        result.identities.push({productID, proximityPairingProductID});
+    }
+  }
+  const productInfo = ObjC.classes.CBProductInfo;
+  if (productInfo?.['+ productInfoWithProductID:']) {
+    for (const requested of [0x2036, 0x2030, 0x2037, 0x2032, 0x201b]) {
+      const record = productInfo['+ productInfoWithProductID:'](requested);
+      result.productRecords.push({requested, returned: record ? read(record, 'productID') : null,
+        flags: record ? read(record, 'flags') : null});
+    }
   }
   const routeClass = ObjC.classes.MPAVOutputDeviceRoute;
   if (routeClass) for (const route of ObjC.chooseSync(routeClass).slice(0, 24)) {

@@ -11,7 +11,7 @@ static void ACResourceImageAdded(const struct mach_header *image, intptr_t slide
     @autoreleasepool {
         ACLoadConfig();
         unsigned os = (unsigned)NSProcessInfo.processInfo.operatingSystemVersion.majorVersion;
-        if (!gEnabled || !ACProcessIsResourceClient(ACProcessName().UTF8String) ||
+        if (!gEnabled || !ACProcessCanUseResources() ||
             (os != 16 && os != 18 && os != 26)) return;
         NSDictionary *prefs = ACReadPreferences();
         if (prefs[@"LegacyRouteResourcesEnabled"])

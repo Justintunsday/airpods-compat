@@ -2,6 +2,7 @@
 #import <unistd.h>
 #import <sys/stat.h>
 #include "../Core/ConfigurationPolicy.h"
+#include "../Core/ProcessPolicy.h"
 
 static NSString *const path = @"/var/mobile/Library/Preferences/com.justintunsday.airpodscompat.plist";
 
@@ -32,6 +33,15 @@ int main(int argc, char **argv) {
             id value = input[key];
             if ([booleans containsObject:key] && [value isKindOfClass:NSNumber.class] &&
                 ([value isEqual:@YES] || [value isEqual:@NO])) preferences[key] = value;
+            else if ([key isEqualToString:@"ExtraResourceClientProcesses"] &&
+                     [value isKindOfClass:NSArray.class] && [value count] <= 4) {
+                for (id name in value) {
+                    if (![name isKindOfClass:NSString.class] || !ACValidOptInResourceClient([name UTF8String])) {
+                        fprintf(stderr, "Client allowlist requires exact process names without wildcards or paths.\n"); return 1;
+                    }
+                }
+                preferences[key] = value;
+            }
             else if ([strings[key] containsObject:value]) preferences[key] = value;
             else if (![key isEqualToString:@"ConfigurationVersion"]) {
                 fprintf(stderr, "Rejected unknown key or invalid value: %s\n", key.UTF8String); return 1;

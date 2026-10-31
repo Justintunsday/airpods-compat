@@ -21,3 +21,7 @@ static inline bool ACProcessIsResourceClient(const char *name) {
     return ACProcessOwnsSystemResources(name) || ACProcessIs(name, "Music") ||
            ACProcessIs(name, "Podcasts") || ACProcessIs(name, "PosterBoard");
 }
+static inline bool ACValidOptInResourceClient(const char *name) {
+    return name && name[0] && strlen(name) <= 128 && !strpbrk(name, "/\\*?[]") &&
+           strcmp(name, ".") && strcmp(name, "..");
+}

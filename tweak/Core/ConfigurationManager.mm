@@ -18,7 +18,19 @@ NSDictionary *ACReadPreferences(void) {
     for (NSString *key in @[@"Scope", @"BorrowProfile", @"LegacyUIProfile", @"LegacyIconProfile"]) {
         if ([stored[key] isKindOfClass:NSString.class]) valid[key] = stored[key];
     }
+    id clients = stored[@"ExtraResourceClientProcesses"];
+    if ([clients isKindOfClass:NSArray.class] && [clients count] <= 4) {
+        BOOL safe = YES;
+        for (id name in clients) {
+            if (![name isKindOfClass:NSString.class] || !ACValidOptInResourceClient([name UTF8String])) { safe = NO; break; }
+        }
+        if (safe) valid[@"ExtraResourceClientProcesses"] = clients;
+    }
     return valid;
+}
+BOOL ACProcessCanUseResources(void) {
+    if (ACProcessIsResourceClient(ACProcessName().UTF8String)) return YES;
+    return [ACReadPreferences()[@"ExtraResourceClientProcesses"] containsObject:ACProcessName()];
 }
 NSString *ACSupportPath(NSString *name) {
     return [ROOT_PATH_NS(@"/Library/Application Support/AirPodsCompat") stringByAppendingPathComponent:name];

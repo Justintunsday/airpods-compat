@@ -18,7 +18,7 @@ static id ACControllerDevice(id controller) {
 }
 static unsigned ACScopedProductID(id device, SEL selector) {
     unsigned pid = originalPID(device, selector);
-    if (!scopeDepth || (__bridge void *)device != scopedDevice || !ACIsAirPods5(pid)) return pid;
+    if (!scopeDepth || ACInHardwareIdentityScope() || (__bridge void *)device != scopedDevice || !ACIsAirPods5(pid)) return pid;
     ACCompatibilityEnvironment environment = {
         (unsigned)NSProcessInfo.processInfo.operatingSystemVersion.majorVersion,
         (bool)gEnabled, (bool)gBorrowEnabled, (bool)ACNativeProductRecord(pid),

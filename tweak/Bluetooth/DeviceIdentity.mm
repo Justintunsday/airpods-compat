@@ -12,6 +12,7 @@ static id ACLoggingName(id object, SEL selector, unsigned productID) {
     return gDisplayNames[@(productID)] ?: originalLoggingName(object, selector, productID);
 }
 void ACInstallDeviceIdentity(void) {
+    ACInstallIdentityBoundaries();
     // Names only. No Bluetooth PID setter, pairing, firmware or Find My hooks.
     Class device = objc_getClass("CBDevice");
     if (!originalProductName && ACMethodMatches(device, @selector(productName), "@", @[], NO))

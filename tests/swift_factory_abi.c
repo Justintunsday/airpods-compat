@@ -3,7 +3,7 @@
 // A compiler/calling-convention contract, not a claim about private Swift ABI
 // behavior on a physical iPhone. Native objects/witness tables are never faked.
 #if defined(__APPLE__)
-typedef __attribute__((swiftcall)) void *(*Factory)(uint32_t, void *, void * __attribute__((swift_context)));
+#include "../tweak/Platform/SwiftFeatureFactory.h"
 static void *expectedDevice, *expectedContext, *expectedResult;
 static __attribute__((swiftcall)) void *factory(uint32_t pid, void *device,
                                                 void *context __attribute__((swift_context))) {
@@ -13,7 +13,7 @@ static __attribute__((swiftcall)) void *factory(uint32_t pid, void *device,
 int main(void) {
     int device, context, result;
     expectedDevice = &device; expectedContext = &context; expectedResult = &result;
-    Factory call = factory;
+    ACFeatureFactory call = factory;
     assert(call(0x201b, &device, &context) == &result);
     return 0;
 }

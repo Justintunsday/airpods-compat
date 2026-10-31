@@ -18,7 +18,7 @@ TWEAK_NAME := AirPodsCompat AirPodsCompatResources
 AC_COMMON_FILES := Core/ConfigurationManager.mm Core/DiagnosticsManager.mm Platform/RuntimeSymbolResolver.mm
 AirPodsCompat_FILES := Tweak.xm $(AC_COMMON_FILES) Core/CrashGuard.mm \
     Models/AirPodsModelRegistry.mm Bluetooth/AccessoryRegistration.mm \
-    Bluetooth/DeviceIdentity.mm Hooks/LegacySettingsHooks.mm \
+    Bluetooth/DeviceIdentity.mm Bluetooth/IdentityBoundaries.mm Hooks/LegacySettingsHooks.mm \
     Hooks/HeadphoneFeatureHooks.mm Hooks/HeadphoneConfigHooks.mm
 AirPodsCompat_CFLAGS := -fobjc-arc -fvisibility=hidden
 AirPodsCompat_CCFLAGS := -std=c++14

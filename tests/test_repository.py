@@ -22,7 +22,7 @@ class RepositoryTests(unittest.TestCase):
 
     def test_swift_factory_preserves_native_calling_context(self):
         text = (ROOT / 'tweak/Hooks/HeadphoneFeatureHooks.mm').read_text()
-        self.assertIn('swiftcall', text)
+        self.assertIn('SwiftFeatureFactory.h', text)
         self.assertIn('swift_context', text)
         self.assertIn('originalFactory(decision.lookupProductID, device, context)', text)
         self.assertIn('ACNativeAirPods5FeatureContent()', text)

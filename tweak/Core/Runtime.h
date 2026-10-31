@@ -34,6 +34,8 @@ void ACInstallAccessoryRegistration(void);
 NSArray<NSDictionary *> *ACSelectedModels(void);
 void ACInstallLegacySettingsHooks(void);
 void ACInstallDeviceIdentity(void);
+void ACInstallIdentityBoundaries(void);
+BOOL ACInHardwareIdentityScope(void);
 void ACInstallHeadphoneFeatureHooks(void);
 void ACInstallHeadphoneConfigHooks(void);
 NSNumber *ACOriginalProductIDForUIObject(id object);

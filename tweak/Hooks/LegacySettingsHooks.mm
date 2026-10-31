@@ -15,7 +15,7 @@ static BOOL ACIsUIProcess(void) {
 }
 
 static uint32_t ACMapUIAccessoryProductID(uint32_t productID) {
-    if (!gEnabled || !gLegacyUIProfileEnabled || NSProcessInfo.processInfo.operatingSystemVersion.majorVersion >= 18 || ![ACProcessName() isEqualToString:@"Preferences"]) {
+    if (!gEnabled || ACInHardwareIdentityScope() || !gLegacyUIProfileEnabled || NSProcessInfo.processInfo.operatingSystemVersion.majorVersion >= 18 || ![ACProcessName() isEqualToString:@"Preferences"]) {
         return productID;
     }
     ACCompatibilityEnvironment environment = {
@@ -308,6 +308,14 @@ static void ACInstallLazyUIHooks(void) {
     ACHookUIModelNameClass(@"BTSDevice");
 }
 
+static unsigned (*originalProximityPID)(id, SEL);
+static id (*originalLegacyProductInfo)(id, SEL, unsigned);
+static unsigned ACLegacyProximityPID(id object, SEL selector) {
+    return ACMapUIAccessoryProductID(originalProximityPID(object, selector));
+}
+static id ACLegacyProductInfo(id object, SEL selector, unsigned productID) {
+    return originalLegacyProductInfo(object, selector, ACMapUIAccessoryProductID(productID));
+}
 void ACInstallLegacySettingsHooks(void) {
     if (NSProcessInfo.processInfo.operatingSystemVersion.majorVersion >= 18 || !ACIsUIProcess()) return;
     static dispatch_once_t once;
@@ -323,4 +331,13 @@ void ACInstallLegacySettingsHooks(void) {
         gHookedUIIconClasses = [NSMutableSet set];
     });
     ACInstallLazyUIHooks();
+    ACInstallIdentityBoundaries();
+    Class device = NSClassFromString(@"CBDevice");
+    SEL proximity = @selector(proximityPairingProductID);
+    if (!originalProximityPID && ACMethodMatches(device, proximity, "I", @[], NO))
+        MSHookMessageEx(device, proximity, (IMP)ACLegacyProximityPID, (IMP *)&originalProximityPID);
+    Class info = NSClassFromString(@"CBProductInfo");
+    SEL lookup = @selector(productInfoWithProductID:);
+    if (!originalLegacyProductInfo && ACMethodMatches(info, lookup, "@", @[@"I"], YES))
+        MSHookMessageEx(object_getClass(info), lookup, (IMP)ACLegacyProductInfo, (IMP *)&originalLegacyProductInfo);
 }

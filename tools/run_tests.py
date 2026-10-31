@@ -2,6 +2,7 @@
 """Host policy and repository integration checks. No physical-device assertions."""
 import argparse
 import os
+import platform
 from pathlib import Path
 import subprocess
 import sys
@@ -22,6 +23,13 @@ def main():
             subprocess.run(command + ['-std=c11', '-Wall', '-Wextra', '-Werror', str(source), '-o', str(binary)], check=True)
             subprocess.run([str(binary)], check=True)
             print(f'PASS {source.name}', flush=True)
+        if platform.system() == 'Darwin':
+            binary = Path(output) / 'runtime_safety'
+            subprocess.run(['clang++', '-std=c++14', '-fobjc-arc', '-Wall', '-Wextra', '-Werror',
+                            '-I', str(ROOT / 'tests/include'), str(ROOT / 'tests/runtime_safety.mm'),
+                            str(ROOT / 'tweak/Platform/RuntimeSymbolResolver.mm'),
+                            '-framework', 'Foundation', '-o', str(binary)], check=True)
+            subprocess.run([str(binary)], check=True)
     subprocess.run([sys.executable, str(ROOT / 'tools/validate_registry.py')], check=True)
     subprocess.run([sys.executable, '-m', 'unittest', 'discover', '-s', 'tests', '-v'], cwd=ROOT, check=True)
 

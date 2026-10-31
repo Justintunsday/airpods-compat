@@ -19,6 +19,8 @@ ObjC.schedule(ObjC.mainQueue, () => {
     ['MPAVRoutingController', '+ _symbolNameForRoute:'],
     ['MRUOutputDeviceAsset', '- initWithOutputDeviceRoute:'],
     ['BCBatteryDevice', '- batteryWidgetGlyphName:']
+    ,['CBDevice', '- productID'], ['CBDevice', '- proximityPairingProductID'], ['CBDevice', '- productName']
+    ,['BluetoothDevice', '- productID'], ['CBProductInfo', '+ productInfoWithProductID:']
   ]) {
     const method = ObjC.classes[name]?.[selector];
     result.hooks[name + selector] = method ? {encoding: method.types, image: moduleFor(method.implementation)} : null;

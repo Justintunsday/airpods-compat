@@ -1,10 +1,9 @@
 #import "../Core/Runtime.h"
+#include "../Platform/SwiftFeatureFactory.h"
 
 // Swift Array is one native word. It is NOT an Objective-C id. Preserve the
 // static metatype in swiftself (x20), the native device ref and array ownership.
 // No existential, metadata object, conformance or witness table is constructed.
-typedef __attribute__((swiftcall)) void *(*ACFeatureFactory)(
-    uint32_t, void *, void * __attribute__((swift_context)));
 static ACFeatureFactory originalFactory;
 
 static void * __attribute__((swiftcall)) ACFeatureContents(

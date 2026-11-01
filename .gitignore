@@ -1,0 +1,5 @@
+tweak/.theos/
+tweak/packages/
+dist/
+__pycache__/
+*.pyc

@@ -1,4 +1,11 @@
-# airpods-compat
+# AirPods Compat Beta 1
+
+**越狱预发布版：`v0.0.1-beta.1`（deb 版本 `0.0.1~beta1`）。**
+本版本以已恢复到测试手机的 `a30615d` 旧版为基线，保持原有 tweak 代码和注入规则，
+不包含架构重构分支新增的 ANC 设置按钮或控制中心模块。
+当前设备证据限于 iOS 16.1.1 / 20B101、Dopamine rootless、ElleKit 1.2。
+ANC/通透实际效果、iOS 18/26 真机和独立充电盒电量均未在本 Beta 中确认为通过。
+详见 [Beta 1 发布说明](docs/RELEASE-BETA1.md)。
 
 把新版 AirPods（AirPods 4/5、AirPods Pro 3、AirPods Max 2 及对应充电盒）的支持
 移植到较低版本的 iOS，并提供一个非越狱可用的自检 App 与全套 CI。
@@ -115,7 +122,7 @@ iOS 16/17 没有 `HeadphoneManager`/FeatureContent 链，设置页由旧 `Headph
 48/50）映射为 `AirPods 5`，并用 pref `LegacyIconProfile`（默认 `airpods3`）把图标/布局资源
 映射到 AirPods 3。可选 `airpods3`（默认）/ `pro2` / `off`。iOS 16 没有 AirPods 5 的头部大图
 资源，tweak 将 `getProductIDString=UNKNOWN` 映射为 AirPods 3 的 `B688` 资源，因此顶部显示
-AirPods 3 图片；ANC/通透等功能按设备能力正常工作。
+AirPods 3 图片。本 Beta 不包含新增的 ANC/通透按钮，当前设备上的实际功能仍需单独验证。
 
 ## 已知差异（iOS 26.6.2 相对 27.0）
 

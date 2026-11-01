@@ -1,0 +1,70 @@
+name: Build Beta 1 jailbreak packages
+on:
+  workflow_dispatch:
+  push:
+    branches: [release/beta1]
+    paths: ["tweak/**", "tests/**", "tools/validate_beta1_package.py", ".github/workflows/build-beta1.yml"]
+permissions:
+  contents: read
+jobs:
+  deb:
+    runs-on: macos-15
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        scheme: [rootless, rootful]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - name: Verify baseline runtime and resource policy
+        run: |
+          set -euo pipefail
+          git diff --exit-code a30615d3c36e63c8ebe55e6400697c967d3ccae3 HEAD -- tweak ':!tweak/control'
+          clang -std=c11 -Wall -Wextra -Werror tests/legacy_resource_policy.c -o "$RUNNER_TEMP/beta1-policy"
+          "$RUNNER_TEMP/beta1-policy"
+      - name: Install toolchain
+        run: brew install ldid xz dpkg
+      - name: Install pinned Theos and SDKs
+        run: |
+          set -euo pipefail
+          THEOS="$RUNNER_TEMP/theos"
+          git clone https://github.com/theos/theos.git "$THEOS"
+          git -C "$THEOS" checkout 6e7b8c40e0f5f9f5b2377800dc1e42cd2560d24a
+          git -C "$THEOS" submodule update --init --recursive --depth 1
+          rm "$THEOS/sdks/.keep"
+          rmdir "$THEOS/sdks"
+          git init "$THEOS/sdks"
+          git -C "$THEOS/sdks" remote add origin https://github.com/theos/sdks
+          git -C "$THEOS/sdks" fetch --depth 1 origin 0222fd5413cf4b9af096f37b4621afa2688572f7
+          git -C "$THEOS/sdks" checkout FETCH_HEAD
+          echo "THEOS=$THEOS" >> "$GITHUB_ENV"
+      - name: Build and validate Beta 1 package
+        env:
+          SCHEME: ${{ matrix.scheme }}
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          if [ "$SCHEME" = rootless ]; then
+            make -C tweak package FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=rootless 2>&1 | tee dist/build.log
+          else
+            make -C tweak package FINALPACKAGE=1 THEOS_PACKAGE_ARCH=iphoneos-arm THEOS_PACKAGE_INSTALL_PREFIX= 2>&1 | tee dist/build.log
+          fi
+          for file in tweak/packages/*.deb; do
+            arch="$(basename "$file" .deb | awk -F_ '{print $NF}')"
+            target="dist/AirPodsCompat-Beta1-${SCHEME}-${arch}.deb"
+            cp "$file" "$target"
+            python3 tools/validate_beta1_package.py "$target" --scheme "$SCHEME"
+          done
+          cp docs/RELEASE-BETA1.md dist/RELEASE-BETA1.md
+          cd dist
+          shasum -a 256 *.deb > SHA256SUMS
+      - name: Upload package, checksum and compiler log
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: beta1-${{ matrix.scheme }}
+          path: dist/
+          if-no-files-found: error
+          retention-days: 30

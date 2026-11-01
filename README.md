@@ -1,148 +1,227 @@
 # AirPods Compat Beta 1
 
-**越狱预发布版：`v0.0.1-beta.1`（deb 版本 `0.0.1~beta1`）。**
-本版本以已恢复到测试手机的 `a30615d` 旧版为基线，保持原有 tweak 代码和注入规则，
-不包含架构重构分支新增的 ANC 设置按钮或控制中心模块。
-当前设备证据限于 iOS 16.1.1 / 20B101、Dopamine rootless、ElleKit 1.2。
-ANC/通透实际效果、iOS 18/26 真机和独立充电盒电量均未在本 Beta 中确认为通过。
-详见 [Beta 1 发布说明](docs/RELEASE-BETA1.md)。
+AirPodsCompat is a jailbreak tweak that adds missing AirPods model registrations
+and adapts headphone Settings, audio-route icons, and battery resources on older
+iOS versions. A separate SwiftUI companion app provides configuration and device
+diagnostics.
 
-把新版 AirPods（AirPods 4/5、AirPods Pro 3、AirPods Max 2 及对应充电盒）的支持
-移植到较低版本的 iOS，并提供一个非越狱可用的自检 App 与全套 CI。
+**Current prerelease: [Beta 1 — v0.0.1-beta.1](https://github.com/Justintunsday/airpods-compat/releases/tag/v0.0.1-beta.1).**
+The Debian package version is `0.0.1~beta1`.
 
-- 设备：iPhone 16（`iPhone17,3`），iOS 18.0 – 27.x
-- 源版本：iOS 27.0（24A437） · 主目标：iOS 26.6.2（23G90）
-- 越狱：rootless（Dopamine / ElleKit / roothide）与 rootful 均可
+Beta 1 uses the restored legacy implementation from `a30615d`, with the same
+runtime code and injection filters. It excludes the architecture-refactor
+branch's new ANC Settings buttons and Control Center noise-control module.
+See the [release notes](docs/RELEASE-BETA1.md) for the release scope and validation
+record.
 
-## 安全模型（v0.3）
+## Downloads
 
-- **默认只注册本机缺失的新代型号**（`tier=core`，19 个：AirPods 4/5、Pro 3、Max 2 及对应盒子），
-  Beats/老型号需在 App 里切换到「全部型号」
-- **抽象基类优先**：以 `UARPSupportedAccessoryAirPodsBud/Case/CaseUSB` 为基类，
-  具体型号类只作 fallback，避免继承别的型号的能力
-- **进程分工**：UARP 注册只在 `bluetoothd / uarpd / bluetoothuserd / bluetoothaudiod` 内执行；
-  其他注入进程承担名称显示或 v0.4 特性页工厂 hook
-- **崩溃守护**：每个配件守护进程在注册前独立创建标记，完成后清除；若标记残留，
-  该进程后续启动持续跳过 UARP 注册。排查原因后，需在越狱环境中手动删除
-  `/Library/Application Support/AirPodsCompat/.registration-in-progress.<进程名>`
-  （rootless 安装位于 `/var/jb/Library/Application Support/AirPodsCompat/`）才能重新尝试。
-- App 可切换：总开关 / UARP 注册开关 / 注册范围 / AirPods 5 设置页借用目标。
-  写入系统偏好文件需要相应权限；保存失败时界面显示错误并保留原值。
+| Package | Jailbreak layout | Installation prefix |
+| --- | --- | --- |
+| [Rootless deb](https://github.com/Justintunsday/airpods-compat/releases/download/v0.0.1-beta.1/AirPodsCompat-Beta1-rootless-iphoneos-arm64.deb) | Dopamine/rootless; `iphoneos-arm64` | `/var/jb` |
+| [Rootful deb](https://github.com/Justintunsday/airpods-compat/releases/download/v0.0.1-beta.1/AirPodsCompat-Beta1-rootful-iphoneos-arm.deb) | Rootful; `iphoneos-arm` | `/` |
 
-## 全型号支持
+[SHA-256 checksums](https://github.com/Justintunsday/airpods-compat/releases/download/v0.0.1-beta.1/SHA256SUMS)
+and compiler logs are attached to the prerelease. The companion IPA is a separate
+build and is not included in this jailbreak-only release.
 
-型号表由 `tools/extract_airpods_models.py` 从 iOS 27 的 CoreUARP 反汇编自动提取
-（`models/airpods.json` → tweak 的 plist + App 内 `Models.json`），共 **33 个配件类**：
+## Installation
 
-- AirPods 1/2/3/4/4-ANC/5（含无线充电版）、AirPods Pro 1/2/3、AirPods Max 1/2
-- 各代充电盒（USB / MagSafe / 无线变体）
-- 同族的 Beats 蓝牙配件
-- 备选型号关系（A3532↔A3531、A3440↔A3439、A3064↔A3063、A3048↔A3047 …）
+1. Download the package matching your jailbreak layout and verify its checksum.
+2. Install it with Sileo/Zebra, or run `dpkg -i /absolute/path/package.deb`.
+3. Restart the affected Settings/audio apps, Bluetooth, and SpringBoard, or
+   perform a userspace restart using your jailbreak's tools.
 
-运行时只注册本机缺失的型号：iOS 27 原生的自动跳过，老系统补齐各自缺口。
+Debian sorts `0.0.1~beta1` before `0.0.1`, so installing Beta 1 over the older
+package can produce a downgrade warning. Keep the previous deb and preferences
+for recovery.
 
-## 兼容性
+The companion app requires a separately signed installation. On a non-jailbroken
+device it provides diagnostics; it does not install the system compatibility
+hooks. Shared configuration writes require access to the tweak's preference
+file, and the app reports save failures when that access is unavailable.
 
-| iOS | 代表性设备 | 状态 |
-|---|---|---|
-| 15.6.x | iPhone 13 (iPhone14,5) | 构建支持（无 cryptex，走整包回退分析） |
-| 16.6.x | iPhone 13 | 构建支持 |
-| 17.7 | iPhone 14 Pro (iPhone15,2) | 构建支持 |
-| 18.6.2 | iPhone 16 | 构建支持 |
-| 26.6.2 | iPhone 16 | 主目标 |
-| 27.0 | iPhone 16 | 源版本（原生支持，自动跳过注册） |
+## Compatibility and current evidence
 
-## 产物（GitHub Actions artifacts）
+| Environment or feature | Evidence |
+| --- | --- |
+| iPhone SE 2, iOS 16.1.1 / 20B101, Dopamine rootless, ElleKit 1.2 | The legacy baseline was restored and its package files checked. The new noise-control module was absent after restarting SpringBoard. |
+| Beta 1 rootless and rootful packages | Both CI builds passed resource-policy and package validation, including architecture, paths, and arm64/arm64e slices. |
+| Rootful installation on hardware | Not validated in the current test session. |
+| AirPods 5 ANC/transparency | Actual listening-mode behavior and acoustic results remain unverified for this release. |
+| iOS 18 and iOS 26 hardware | No current physical-device validation. |
+| Independent charging-case battery | No verified Case power-source record; no case percentage is synthesized. |
+| Icons in arbitrary applications | Coverage depends on the process and resource implementation used by each UI. |
 
-| artifact | 内容 |
-|---|---|
-| `airpodscompat-deb` | `AirPodsCompat-rootless-iphoneos-arm64.deb`（装 `/var/jb`）、`AirPodsCompat-rootful-iphoneos-arm.deb`（装 `/`）、`INSTALL.txt` |
-| `airpodscompat-app` | `AirPodsCompat-unsigned.ipa`（未签名，可重签/TrollStore） |
-| `dsc-analysis-<版本>` | 各版本 DSC 分析数据与抽取出的 CoreUARP / CoreBluetooth / HeadphoneManager dylib |
+The analysis workflow includes targets for iOS 15.6.1, 16.6.1, 17.7, 18.6.2,
+26.6.2, and 27.0. These are binary-analysis targets, not a list of systems with
+confirmed device functionality. Historical acceptance notes should be read
+alongside the current Beta 1 limitations.
 
-**怎么选包**：`iphoneos-arm64` = rootless，`iphoneos-arm` = rootful；
-设备上可用 `dpkg-deb -f <deb> Architecture` 复核。
+## How it works
 
-## 安装
+- **Missing-model registration:** by default, only missing newer models in the
+  `core` tier are registered. Older models and Beats entries require `Scope=all`.
+- **Accessory class selection:** registration prefers the abstract
+  `UARPSupportedAccessoryAirPodsBud`, `Case`, and `CaseUSB` base classes, with
+  concrete classes as fallbacks.
+- **Process responsibilities:** UARP registration runs in `bluetoothd`,
+  `bluetoothuserd`, `bluetoothaudiod`, and `uarpd`. UI hooks handle names,
+  Settings resources, and feature-content selection in their owning processes.
+- **Registration crash guard:** each accessory daemon creates its own marker
+  before registration and removes it after completion. A leftover marker makes
+  that daemon skip registration on later launches. Investigate the failure before
+  removing `.registration-in-progress.<process>` from the AirPodsCompat support
+  directory.
+- **Existing native entries:** model registration skips accessory classes already
+  present in the OS. Registering a model does not establish support for all of
+  its hardware features.
 
-- **越狱设备**：Sileo / Zebra 安装匹配架构的 deb → 重启用户空间
-  （或 `killall bluetoothd SpringBoard`）
-- **未越狱设备**：AltStore / Sideloadly 安装 ipa → 「诊断 → 运行自检」
+The support directory is `/Library/Application Support/AirPodsCompat/` on
+rootful installations and `/var/jb/Library/Application Support/AirPodsCompat/`
+on rootless installations.
 
-## 仓库结构
+Beta 1 retains the legacy resource filters for MediaPlayer, MediaControls,
+SpringBoard, and MusicUIService. These framework filters can also load hooks in
+applications that use those frameworks. An in-memory framework hook affects
+only its host process; it does not change every application's icon database.
+Ordinary audio playback does not require injecting every playback app.
 
+## Model registry
+
+The registry contains **33 accessory classes**, including AirPods 1–5, AirPods
+Pro 1–3, AirPods Max 1–2, charging-case variants, and related Beats accessories.
+These entries describe model identities and registration data, not 33 verified
+sets of working features.
+
+`tools/extract_airpods_models.py` extracts the model table from CoreUARP
+binary analysis. Its generated data is stored in:
+
+- `models/airpods.json` — source model table.
+- `tweak/layout/Library/Application Support/AirPodsCompat/AirPodsCompatModels.plist`
+  — installed tweak data.
+- `app/Resources/Models.json` — companion-app data.
+
+Alternate model relationships include A3532/A3531, A3440/A3439, A3064/A3063,
+and A3048/A3047.
+
+## Configuration
+
+The tweak reads:
+
+```text
+/var/mobile/Library/Preferences/com.justintunsday.airpodscompat.plist
 ```
-.github/workflows/
-  dsc-analysis.yml   # 6 个 iOS 版本的 DSC 分析矩阵（15.6.1/16.6.1/17.7/18.6.2/26.6.2/27.0）
-  build-tweak.yml    # 构建 rootless + rootful 两个 deb
-  build-app.yml      # XcodeGen + xcodebuild 出未签名 ipa
-  test-app.yml       # iOS 模拟器单元测试
-analysis/run.sh      # DSC 分析脚本（远程抽 DSC + 定向查询 + dylib 抽取）
-tools/               # 分析脚本：extract_airpods_models（CoreUARP 型号表）、
-                     # stub_map（stub/GOT→符号）、disass_context（调用点反汇编）等
-models/airpods.json  # 型号表源数据
-tweak/               # Theos 包（AirPodsCompat.dylib + 型号表 + 注入 filter）
-app/                 # SwiftUI 控制 App + 非越狱自检 + 单元测试
-docs/ANALYSIS.md     # 分析报告（型号映射、hook 目标、风险）
+
+This user-data path is not prefixed with `/var/jb`. Preferences are loaded when
+an affected process starts, so restart those processes after changing them.
+
+| Key | Values and default behavior |
+| --- | --- |
+| `Enabled` | Master switch; defaults to `true`. |
+| `UARPEnabled` | Missing-model registration; defaults to `true`. |
+| `Scope` | Defaults to the newer `core` models; `all` includes the full registry. |
+| `BorrowProfile` | `airpods4anc` by default; also accepts `airpodspro2`, `airpodspro3`, or `off`. |
+| `LegacyUIProfile` | AirPods 3 by default; accepts `airpods3`, `airpods4anc`, `airpodspro2`/`pro2`, `airpodspro3`, or `off`. |
+| `LegacyIconProfile` | AirPods 3 by default; use `airpods3`, `pro2`/`airpodspro2`, or `off`. `airpods4anc` also uses the legacy AirPods 3 icon resources. |
+| `DiagnosticsEnabled` | Diagnostic logging; defaults to `false`. |
+
+### Legacy Settings on iOS 16/17
+
+The legacy Settings path uses HeadphoneConfigs templates. AirPods 5 model-name
+keys are mapped to readable names, while the default compatibility profile
+borrows AirPods 3 layout resources.
+
+On iOS 16, an unknown headphone header resource can be mapped to the native
+AirPods 3 `B688` image. The displayed illustration can therefore look like
+AirPods 3 while the name remains AirPods 5. This is presentation compatibility;
+it does not establish ANC/transparency support.
+
+### Feature-content borrowing on iOS 26
+
+The legacy implementation targets
+`HeadphoneDevice.allFeatureContents(productID:device:)` when the required
+HeadphoneManager factory is available. For AirPods 5 IDs `0x2036`, `0x2030`,
+`0x2037`, and `0x2032`, its default lookup target is AirPods 4 (ANC), `0x201b`,
+using Apple's existing `B768FeatureContent` implementation.
+
+Optional targets are AirPods Pro 2 (`B698`, `0x2014`) and AirPods Pro 3 (`B788`,
+`0x2027`). The native AirPods 5 provider is `B868FeatureContent`; the legacy code
+skips borrowing when its native-support check succeeds. Systems without the
+required factory retain the older registration and UI paths.
+
+This code path is preserved from the baseline. Its presence and binary-analysis
+evidence do not establish working iOS 26 features on a physical device. Detailed
+call-chain research is in [ANALYSIS.md](docs/ANALYSIS.md), sections 11.12–11.16.
+
+## Companion diagnostics
+
+The app can report audio routes through AVAudioSession, inspect available
+BluetoothManager data, and decode nearby Apple pairing advertisements. AirPods 5
+IDs are highlighted in the device probe. Nearby advertisements, paired devices,
+and connected audio routes are shown as different observations.
+
+The registration self-test uses the app's own process and can export its report.
+Successful app-local registration or a detected framework does not prove that
+system hooks are installed or that a headphone feature works.
+
+## Building and testing
+
+The [Beta 1 build](https://github.com/Justintunsday/airpods-compat/actions/runs/41265080385)
+passed both package schemes. Its workflow checks that tweak runtime files match
+baseline `a30615d`, then validates the release version, package contents,
+installation prefix, binary architectures, and absence of the experimental
+noise-control components.
+
+With Theos and the required iOS SDK configured, build locally using:
+
+```sh
+# Rootless
+make -C tweak package FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=rootless
+
+# Rootful
+make -C tweak package FINALPACKAGE=1 \
+  THEOS_PACKAGE_ARCH=iphoneos-arm THEOS_PACKAGE_INSTALL_PREFIX=
 ```
 
-## 测试
+Run the legacy resource-policy test with a C compiler:
 
-**1. 模拟器单元测试（CI）**：`Test App` workflow 在 iOS Simulator 上运行
-`app/Tests/AirPodsCompatTests.swift`，测试前注入 stub 的 UARP 类，
-强制走完整注册路径，断言：
+```sh
+clang -std=c11 -Wall -Wextra -Werror \
+  tests/legacy_resource_policy.c -o /tmp/airpods-resource-policy
+/tmp/airpods-resource-policy
+```
 
-- 型号表完整（≥30 个型号、产品 ID 唯一性）
-- 每个缺失型号都能注册成功、`setOfAccessories` 数量确实增长
-- 各配件 `identifier` 互不相同（防回归：曾因标识相同被 NSSet 合并成 1 个）
+The test covers target IDs, unrelated devices, vendor/transport guards, battery
+part handling, and exact route-model matching. The separate app test workflow
+uses simulator UARP stubs to test registry completeness, registration, and unique
+accessory identifiers. Simulator tests are separate from hardware acceptance.
 
-**2. 非越狱自检（真机）**：App →「诊断 → 运行自检」输出本机缺失型号、
-`HeadphoneManager` 类存在性、动态注册干跑结果，可复制报告。
+| Workflow | Output |
+| --- | --- |
+| `build-beta1.yml` | `beta1-rootless` and `beta1-rootful` artifacts: deb, checksum, compiler log, and release notes. |
+| `build-tweak.yml` | Legacy combined `airpodscompat-deb` artifact. |
+| `build-app.yml` | Separate unsigned companion IPA, `airpodscompat-app`. |
+| `test-app.yml` | Companion simulator unit tests. |
+| `dsc-analysis.yml` | Version-specific dyld shared-cache analysis artifacts. |
 
-**3. 设备探测（真机）**：App →「诊断 → 设备探测」列出：
-- 音频路由（AVAudioSession）中的已连接设备（AirPods 会显示名称/端口）
-- 附近 BLE 广播中解析出的 Apple 近场配对型号 ID（0x2036/0x2030/0x2037/0x2032
-  会高亮为 AirPods 5）
-- 私有 `BluetoothManager` 的已连接设备列表（尽力而为，失败不影响其他区块）
-  状态区分别标明连接、配对和附近广播；附近广播不代表当前已连接。
-可一键复制探测报告。
+## Repository layout
 
-**3. 构建校验**：两个 deb 的 `Architecture` 与安装路径（`var/jb` vs `Library`）均在 CI 生成。
+```text
+.github/workflows/   Package builds, app builds, tests, and binary analysis
+analysis/            Shared-cache extraction and targeted inspection scripts
+models/airpods.json  Source accessory registry
+tools/               Model extraction, disassembly, and package validation
+tweak/               Theos tweak, resource hooks, model data, and filters
+app/                 SwiftUI companion, diagnostics, and simulator tests
+docs/                Release notes and technical research
+```
 
-## 分析流程
+The binary-analysis workflow runs `bash analysis/run.sh <version> [build] [device]`,
+extracts selected shared-cache images with `ipsw`, and inspects CoreUARP,
+CoreBluetooth, and HeadphoneManager. iOS versions without the cryptex path use
+the full-firmware fallback described in the script.
 
-1. `analysis/run.sh <版本> [build] [设备]` 远程抽取 DSC（iOS 15 自动回退为整包下载 + 本地抽取）
-2. `ipsw dyld` 定向查询 + 抽取目标 dylib（不做全量 dump，避免 30 分钟级卡顿）
-3. `tools/extract_airpods_models.py` 反汇编 CoreUARP，输出型号表（tier/基类/备选型号）
-
-## iOS 16/17 旧设置页
-
-iOS 16/17 没有 `HeadphoneManager`/FeatureContent 链，设置页由旧 `HeadphoneConfigs` 按
-`ACCESSORY_MODEL_NAME_<PID 低 6 位>` 选择模板。tweak 把 AirPods 5 的 54/55（以及无线充电的
-48/50）映射为 `AirPods 5`，并用 pref `LegacyIconProfile`（默认 `airpods3`）把图标/布局资源
-映射到 AirPods 3。可选 `airpods3`（默认）/ `pro2` / `off`。iOS 16 没有 AirPods 5 的头部大图
-资源，tweak 将 `getProductIDString=UNKNOWN` 映射为 AirPods 3 的 `B688` 资源，因此顶部显示
-AirPods 3 图片。本 Beta 不包含新增的 ANC/通透按钮，当前设备上的实际功能仍需单独验证。
-
-## 已知差异（iOS 26.6.2 相对 27.0）
-
-- **显示名**：`AirPods 5`、`AirPods 5 (Wireless Charging)`（27.0 位于 CoreBluetooth）
-- **UARP 配件类**：A3440/A3441/A3529/A3529USB/A3530USB/A3532/A3533
-  （A3439、A3531 由备选型号覆盖）
-- **Swift 功能链（v0.4 已实现）**：27.0 的 `B868FeatureContent` 在 26.6.2 不存在。
-  tweak 在唯一工厂 `HeadphoneDevice.allFeatureContents(productID:device:)` 入口把
-  4 个 AirPods 5 PID（0x2036/0x2030/0x2037/0x2032）替换为 AirPods 4 (ANC) 的
-  0x201b，复用系统真实的 `B768FeatureContent` 与其见证表（不伪造 witness table、
-  tweak 内不含 B768 实现代码）；注入范围含 `HeadphoneProxService` 与 Preferences；
-  iOS 27+ 检测到 `B868FeatureContent` 原生支持时自动跳过。
-  调用链证据见 `docs/ANALYSIS.md` §11.12–§11.14。
-  **借用目标可选**：pref `BorrowProfile` = `airpods4anc`（默认，B768/0x201b）/
-  `airpodspro2`（B698/0x2014）/ `airpodspro3`（B788/0x2027）/ `off`
-  （控制 App 可选；类↔型号映射见 §11.16）。这是借用现有 UI，
-  **不等于移植 iOS 27 的 B868 专属特性或验证了实际设备功能**。
-  **适用范围 iOS 26+**：FeatureContent 链从 26 才有；15.6.1–18.6.2 上
-  `HeadphoneManager` 不存在或没有该链，hook 安全跳过、保持 v0.3 行为
-  （跨版本证据见 §11.15；旧版 ANC 行的 PID 门控清单见 §11.16）。
-- **型号 ID 表**：A3439…A3533（A3531 通过 A3532 的备选型号覆盖）
-
-参考：Apple《Identify your AirPods》 <https://support.apple.com/en-us/109525>
+Further reading: [Beta 1 release notes](docs/RELEASE-BETA1.md),
+[technical analysis](docs/ANALYSIS.md), and
+[iOS 16 resource research](docs/IOS16-RESOURCE-COMPAT.md).
